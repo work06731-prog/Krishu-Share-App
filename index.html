@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Krishu Share - Premium Modern File Sharing Application">
+    <meta name="theme-color" content="#0f172a">
+    <title>Krishu Share | Premium File Sharing</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Cropper.js CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        primary: 'var(--color-primary)',
+                        secondary: 'var(--color-secondary)',
+                        surface: 'var(--color-surface)',
+                        'surface-glass': 'var(--color-surface-glass)',
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'fade-in': 'fadeIn 0.2s ease-out',
+                    },
+                    keyframes: {
+                        slideUp: { '0%': { transform: 'translateY(20px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } },
+                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/compressorjs/1.2.1/compressor.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+
+    <style>
+        :root {
+            --color-primary: #3b82f6;
+            --color-secondary: #8b5cf6;
+            --color-surface: #ffffff;
+            --color-surface-glass: rgba(255, 255, 255, 0.7);
+            --color-text: #0f172a;
+            --color-text-muted: #64748b;
+            --color-border: rgba(0, 0, 0, 0.1);
+        }
+        .dark {
+            --color-surface: #0f172a;
+            --color-surface-glass: rgba(15, 23, 42, 0.7);
+            --color-text: #f8fafc;
+            --color-text-muted: #94a3b8;
+            --color-border: rgba(255, 255, 255, 0.1);
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%);
+            color: var(--color-text);
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+        .dark body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+        }
+
+        .glass {
+            background: var(--color-surface-glass);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--color-border);
+        }
+
+        .glass-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            transition: all 0.2s ease;
+        }
+        .dark .glass-card {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+        }
+        .glass-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .drop-zone {
+            background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='16' ry='16' stroke='%233B82F6FF' stroke-width='2' stroke-dasharray='12%2c 12' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
+            transition: all 0.3s ease;
+        }
+        .drop-zone.drag-over {
+            background-color: rgba(59, 130, 246, 0.1);
+            transform: scale(1.01);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--color-text-muted); border-radius: 3px; opacity: 0.5; }
+        
+        .loader {
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 3px solid white;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        [contenteditable]:focus { outline: 2px solid var(--color-primary); border-radius: 4px; }
+        
+        .video-controls { opacity: 0; transition: opacity 0.3s; }
+        .video-container:hover .video-controls { opacity: 1; }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col overflow-x-hidden">
+
+    <!-- Navigation -->
+    <nav class="glass sticky top-0 z-50 px-4 py-3 mb-6">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-xl tracking-tight" data-i18n="appName">Krishu Share</h1>
+                    <p class="text-xs text-gray-500 dark:text-gray-400" data-i18n="appTagline">Premium File Sharing</p>
+                </div>
+            </div>
+            
+            <div class="hidden md:flex items-center gap-2">
+                <button id="btnHistory" class="px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition flex items-center gap-2" aria-label="History">
+                    <i class="fa-solid fa-clock-rotate-left"></i> <span data-i18n="history">History</span>
+                </button>
+                <button id="btnTools" class="px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition flex items-center gap-2" aria-label="Tools">
+                    <i class="fa-solid fa-toolbox"></i> <span data-i18n="tools">Tools</span>
+                </button>
+                <button id="btnSettings" class="px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition flex items-center gap-2" aria-label="Settings">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
+                <button id="btnTheme" class="w-10 h-10 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition flex items-center justify-center" aria-label="Toggle Theme">
+                    <i class="fa-solid fa-moon dark:hidden"></i>
+                    <i class="fa-solid fa-sun hidden dark:block text-yellow-400"></i>
+                </button>
+                <a href="https://github.com" target="_blank" class="w-10 h-10 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition flex items-center justify-center" aria-label="GitHub">
+                    <i class="fa-brands fa-github text-xl"></i>
+                </a>
+            </div>
+            
+            <button id="btnMobileMenu" class="md:hidden w-10 h-10 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl mx-auto w-full px-4 pb-12 space-y-8">
+        
+        <!-- Drop Zone -->
+        <section id="dropZone" class="drop-zone rounded-2xl p-12 text-center cursor-pointer relative group" tabindex="0" role="button" aria-label="Drag and drop files here or click to browse">
+            <input type="file" id="fileInput" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" multiple>
+            <div class="space-y-4 pointer-events-none">
+                <div class="w-20 h-20 mx-auto rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-500 text-3xl group-hover:scale-110 transition-transform duration-300">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                </div>
+                <h2 class="text-2xl font-bold" data-i18n="dropTitle">Drag & Drop files here</h2>
+                <p class="text-gray-500 dark:text-gray-400" data-i18n="dropSubtitle">or click to browse. Supports images, videos, documents, ZIP, and more.</p>
+                <div class="flex flex-wrap justify-center gap-2 text-xs text-gray-400 mt-4">
+                    <span class="px-2 py-1 rounded bg-gray-100 dark:bg-gray-800">PNG</span>
+                    <span class="px-2 py-1 rounded bg-gray-100 dark:bg-gray-800">MP4</span>
+                    <span class="px-2 py-1 rounded bg-gray-100 dark:bg-gray-800">PDF</span>
+                    <span class="px-2 py-1 rounded bg-gray-100 dark:bg-gray-800">ZIP</span>
+                    <span class="px-2 py-1 rounded bg-gray-100 dark:bg-gray-800">+99 more</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Action Bar -->
+        <section id="actionBar" class="hidden flex flex-wrap items-center justify-between gap-4 glass-card rounded-xl p-4 animate-fade-in">
+            <div class="flex items-center gap-2">
+                <span class="text-sm font-medium text-gray-500 dark:text-gray-400"><span id="fileCount">0</span> <span data-i18n="filesSelected">files selected</span></span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="btnClearAll" class="px-4 py-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition text-sm font-medium" data-i18n="clearAll">Clear All</button>
+                <button id="btnGenerateLink" class="px-6 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition transform hover:scale-105 flex items-center gap-2">
+                    <i class="fa-solid fa-link"></i> <span data-i18n="generateLink">Generate Link</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- File List -->
+        <section id="fileList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- File cards injected here -->
+        </section>
+
+    </main>
+
+    <!-- Modals -->
+    
+    <!-- Upload Progress Modal -->
+    <div id="modalProgress" class="fixed inset-0 z-[60] hidden bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="glass-card bg-white dark:bg-gray-900 rounded-2xl p-6 w-full max-w-md animate-slide-up">
+            <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-circle-notch fa-spin text-blue-500"></i> <span data-i18n="uploading">Uploading...</span>
+            </h3>
+            <div class="space-y-4">
+                <div class="flex justify-between text-sm">
+                    <span id="progressFileName" class="truncate max-w-[200px]">file.jpg</span>
+                    <span id="progressPercent">0%</span>
+                </div>
+                <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div id="progressBar" class="h-full bg-gradient-to-r from-blue-500 to-purple-600 w-0 transition-all duration-300"></div>
+                </div>
+                <div class="flex justify-between text-xs text-gray-500">
+                    <span id="progressSpeed">0 MB/s</span>
+                    <span id="progressEta">Calculating...</span>
+                </div>
+                <div class="flex gap-2 mt-4">
+                    <button id="btnPauseUpload" class="flex-1 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition text-sm font-medium" data-i18n="pause">Pause</button>
+                    <button id="btnCancelUpload" class="flex-1 py-2 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 hover:bg-red-200 dark:hover:bg-red-900/50 transition text-sm font-medium" data-i18n="cancel">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Link Generation Modal -->
+    <div id="modalLink" class="fixed inset-0 z-[60] hidden bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="glass-card bg-white dark:bg-gray-900 rounded-2xl p-6 w-full max-w-lg animate-slide-up max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold" data-i18n="shareOptions">Share Options</h3>
+                <button class="close-modal text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
+                    <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block" data-i18n="directLink">Direct Link</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="shareLink" readonly class="flex-1 bg-transparent border-none text-sm focus:ring-0 text-gray-700 dark:text-gray-300" value="https://krishu.share/x8d9s">
+                        <button id="btnCopyLink" class="px-3 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition" aria-label="Copy"><i class="fa-regular fa-copy"></i></button>
+                    </div>
+                </div>
+
+                <div class="flex justify-center p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+                    <div id="qrcode" class="p-2 bg-white rounded-lg"></div>
+                </div>
+                <div class="flex justify-center gap-2">
+                    <button id="btnDownloadQR" class="text-xs px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition"><i class="fa-solid fa-download mr-1"></i> PNG</button>
+                </div>
+
+                <div class="grid grid-cols-4 gap-2 mt-4">
+                    <button class="share-btn py-3 rounded-xl bg-green-500 text-white hover:bg-green-600 transition" data-platform="whatsapp" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp text-xl"></i></button>
+                    <button class="share-btn py-3 rounded-xl bg-blue-500 text-white hover:bg-blue-600 transition" data-platform="telegram" aria-label="Telegram"><i class="fa-brands fa-telegram text-xl"></i></button>
+                    <button class="share-btn py-3 rounded-xl bg-blue-700 text-white hover:bg-blue-800 transition" data-platform="facebook" aria-label="Facebook"><i class="fa-brands fa-facebook-f text-xl"></i></button>
+                    <button class="share-btn py-3 rounded-xl bg-black text-white hover:bg-gray-800 transition" data-platform="x" aria-label="X"><i class="fa-brands fa-x-twitter text-xl"></i></button>
+                </div>
+                
+                <button id="btnNativeShare" class="w-full py-3 rounded-xl border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center justify-center gap-2 mt-2">
+                    <i class="fa-solid fa-share-nodes"></i> <span data-i18n="moreOptions">More Options</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div id="modalHistory" class="fixed inset-0 z-[60] hidden bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="glass-card bg-white dark:bg-gray-900 rounded-2xl p-6 w-full max-w-4xl h-[80vh] flex flex-col animate-slide-up">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold" data-i18n="uploadHistory">Upload History</h3>
+                <button class="close-modal text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="flex gap-2 mb-4">
+                <input type="text" id="historySearch" placeholder="Search files..." class="flex-1 px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 border-none focus:ring-2 focus:ring-blue-500 text-sm">
+                <select id="historyFilter" class="px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 border-none text-sm">
+                    <option value="all">All</option>
+                    <option value="image">Images</option>
+                    <option value="video">Videos</option>
+                    <option value="document">Documents</option>
+                </select>
+            </div>
+            <div class="flex-1 overflow-y-auto custom-scrollbar">
+                <table class="w-full text-sm text-left">
+                    <thead class="text-xs text-gray-500 uppercase bg-gray-50 dark:bg-gray-800 sticky top-0">
+                        <tr>
+                            <th class="px-4 py-3 rounded-l-lg">File</th>
+                            <th class="px-4 py-3">Size</th>
+                            <th class="px-4 py-3">Date</th>
+                            <th class="px-4 py-3 rounded-r-lg text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyList" class="divide-y divide-gray-200 dark:divide-gray-700">
+                        <!-- History items -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="modalSettings" class="fixed inset-0 z-[60] hidden bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="glass-card bg-white dark:bg-gray-900 rounded-2xl p-6 w-full max-w-md animate-slide-up">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold" data-i18n="settings">Settings</h3>
+                <button class="close-modal text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="space-y-6">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium" data-i18n="defaultProvider">Default Provider</span>
+                    <select id="settingProvider" class="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm border-none">
+                        <option value="local">Local (Object URL)</option>
+                        <option value="0x0.st">0x0.st</option>
+                        <option value="file.io">File.io</option>
+                        <option value="transfer.sh">Transfer.sh</option>
+                    </select>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium" data-i18n="accentColor">Accent Color</span>
+                    <input type="color" id="settingColor" value="#3b82f6" class="w-8 h-8 rounded cursor-pointer border-none bg-transparent">
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium" data-i18n="language">Language</span>
+                    <select id="settingLang" class="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm border-none">
+                        <option value="en">English</option>
+                        <option value="hi">Hindi (हिंदी)</option>
+                    </select>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium" data-i18n="autoCopy">Auto Copy Link</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="settingAutoCopy" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tools Modal -->
+    <div id="modalTools" class="fixed inset-0 z-[60] hidden bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="glass-card bg-white dark:bg-gray-900 rounded-2xl p-6 w-full max-w-3xl h-[80vh] flex flex-col animate-slide-up">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold" data-i18n="tools">Tools</h3>
+                <button class="close-modal text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="flex gap-4 flex-1 overflow-hidden">
+                <div class="w-1/4 border-r border-gray-200 dark:border-gray-700 pr-4 space-y-1 overflow-y-auto custom-scrollbar">
+                    <button class="tool-tab w-full text-left px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium text-sm" data-tool="hash">Hash Generator</button>
+                    <button class="tool-tab w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-sm" data-tool="base64">Base64 Encoder</button>
+                    <button class="tool-tab w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-sm" data-tool="zip">ZIP Creator</button>
+                    <button class="tool-tab w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-sm" data-tool="qr">QR Generator</button>
+                </div>
+                <div class="flex-1 overflow-y-auto custom-scrollbar pl-4">
+                    <!-- Hash Tool -->
+                    <div id="tool-hash" class="tool-content space-y-4">
+                        <h4 class="font-semibold">SHA-256 Generator</h4>
+                        <textarea id="hashInput" class="w-full h-32 p-3 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm" placeholder="Enter text to hash..."></textarea>
+                        <button id="btnGenerateHash" class="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600">Generate</button>
+                        <div class="p-3 rounded-lg bg-gray-100 dark:bg-gray-800 font-mono text-xs break-all" id="hashOutput">Result will appear here</div>
+                    </div>
+                    <!-- Base64 Tool -->
+                    <div id="tool-base64" class="tool-content hidden space-y-4">
+                        <h4 class="font-semibold">Base64 Encode/Decode</h4>
+                        <textarea id="b64Input" class="w-full h-32 p-3 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm" placeholder="Enter text..."></textarea>
+                        <div class="flex gap-2">
+                            <button id="btnB64Encode" class="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm">Encode</button>
+                            <button id="btnB64Decode" class="px-4 py-2 bg-purple-500 text-white rounded-lg text-sm">Decode</button>
+                        </div>
+                        <textarea id="b64Output" readonly class="w-full h-32 p-3 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm font-mono"></textarea>
+                    </div>
+                    <!-- ZIP Tool -->
+                    <div id="tool-zip" class="tool-content hidden space-y-4">
+                        <h4 class="font-semibold">Create ZIP from Files</h4>
+                        <input type="file" id="zipInput" multiple class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+                        <button id="btnCreateZip" class="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600">Download ZIP</button>
+                    </div>
+                    <!-- QR Tool -->
+                    <div id="tool-qr" class="tool-content hidden space-y-4">
+                        <h4 class="font-semibold">QR Code Generator</h4>
+                        <input type="text" id="qrInput" class="w-full p-3 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm" placeholder="Enter URL or text...">
+                        <button id="btnGenerateToolQR" class="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm">Generate</button>
+                        <div id="toolQrOutput" class="flex justify-center p-4 bg-white rounded-lg"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Modal (Image/Video/PDF) -->
+    <div id="modalPreview" class="fixed inset-0 z-[70] hidden bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+        <button class="close-modal absolute top-4 right-4 text-white/70 hover:text-white text-3xl z-10"><i class="fa-solid fa-xmark"></i></button>
+        <div class="relative w-full max-w-5xl h-[85vh] flex items-center justify-center">
+            <img id="previewImage" class="hidden max-w-full max-h-full object-contain rounded-lg shadow-2xl" />
+            <video id="previewVideo" class="hidden max-w-full max-h-full rounded-lg shadow-2xl" controls></video>
+            <iframe id="previewPdf" class="hidden w-full h-full rounded-lg shadow-2xl bg-white"></iframe>
+            <div id="previewControls" class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-4 glass px-6 py-3 rounded-full hidden">
+                <button id="btnZoomIn" class="text-white hover:text-blue-400"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                <button id="btnZoomOut" class="text-white hover:text-blue-400"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                <button id="btnRotate" class="text-white hover:text-blue-400"><i class="fa-solid fa-rotate-right"></i></button>
+                <button id="btnDownloadPreview" class="text-white hover:text-blue-400"><i class="fa-solid fa-download"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-4 right-4 z-[80] transform translate-y-20 opacity-0 transition-all duration-300">
+        <div class="glass-card bg-gray-900 text-white dark:bg-white dark:text-gray-900 px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3">
+            <i id="toastIcon" class="fa-solid fa-check-circle text-green-400 dark:text-green-600"></i>
+            <span id="toastMessage" class="font-medium text-sm">Operation successful</span>
+        </div>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // ==========================================
+        // 1. STATE & CONFIGURATION
+        // ==========================================
+        const state = {
+            files: [],
+            history: JSON.parse(localStorage.getItem('krishu_history') || '[]'),
+            settings: JSON.parse(localStorage.getItem('krishu_settings') || '{"provider":"local","color":"#3b82f6","lang":"en","autoCopy":false}'),
+            currentUpload: null,
+            qrCode: null
+        };
+
+        const i18n = {
+            en: {
+                appName: "Krishu Share",
+                appTagline: "Premium File Sharing",
+                history: "History",
+                tools: "Tools",
+                dropTitle: "Drag & Drop files here",
+                dropSubtitle: "or click to browse. Supports images, videos, documents, ZIP, and more.",
+                filesSelected: "files selected",
+                clearAll: "Clear All",
+                generateLink: "Generate Link",
+                uploading: "Uploading...",
+                pause: "Pause",
+                cancel: "Cancel",
+                shareOptions: "Share Options",
+                directLink: "Direct Link",
+                moreOptions: "More Options",
+                uploadHistory: "Upload History",
+                settings: "Settings",
+                defaultProvider: "Default Provider",
+                accentColor: "Accent Color",
+                language: "Language",
+                autoCopy: "Auto Copy Link"
+            },
+            hi: {
+                appName: "कृशु शेयर",
+                appTagline: "प्रीमियम फाइल शेयरिंग",
+                history: "इतिहास",
+                tools: "उपकरण",
+                dropTitle: "फाइलें यहाँ खींचें और छोड़ें",
+                dropSubtitle: "या ब्राउज़ करने के लिए क्लिक करें। छवियों, वीडियो, दस्तावेज़ों, ZIP और अधिक का समर्थन करता है।",
+                filesSelected: "फाइलें चयनित",
+                clearAll: "सभी साफ़ करें",
+                generateLink: "लिंक जनरेट करें",
+                uploading: "अपलोड हो रहा है...",
+                pause: "रोकें",
+                cancel: "रद्द करें",
+                shareOptions: "शेयर विकल्प",
+                directLink: "प्रत्यक्ष लिंक",
+                moreOptions: "अधिक विकल्प",
+                uploadHistory: "अपलोड इतिहास",
+                settings: "सेटिंग्स",
+                defaultProvider: "डिफ़ॉल्ट प्रदाता",
+                accentColor: "एक्सेंट रंग",
+                language: "भाषा",
+                autoCopy: "लिंक स्वचालित कॉपी"
+            }
+        };
+
+        // ==========================================
+        // 2. UTILITIES & SECURITY
+        // ==========================================
+        const $ = (selector) => document.querySelector(selector);
+        const $$ = (selector) => document.querySelectorAll(selector);
+        
+        const sanitize = (str) => {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        };
+
+        const formatBytes = (bytes, decimals = 2) => {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        };
+
+        const getFileIcon = (type) => {
+            if (type.startsWith('image/')) return 'fa-file-image text-purple-500';
+            if (type.startsWith('video/')) return 'fa-file-video text-red-500';
+            if (type.startsWith('audio/')) return 'fa-file-audio text-yellow-500';
+            if (type.includes('pdf')) return 'fa-file-pdf text-red-600';
+            if (type.includes('zip') || type.includes('rar') || type.includes('7z')) return 'fa-file-zipper text-blue-500';
+            if (type.includes('word') || type.includes('document')) return 'fa-file-word text-blue-700';
+            return 'fa-file text-gray-500';
+        };
+
+        const showToast = (msg, type = 'success') => {
+            const toast = $('#toast');
+            const icon = $('#toastIcon');
+            const message = $('#toastMessage');
+            
+            message.textContent = msg;
+            icon.className = type === 'success' ? 'fa-solid fa-check-circle text-green-400 dark:text-green-600' : 'fa-solid fa-circle-exclamation text-red-400';
+            
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        };
+
+        // ==========================================
+        // 3. INITIALIZATION & THEME
+        // ==========================================
+        const init = () => {
+            // Apply settings
+            document.documentElement.style.setProperty('--color-primary', state.settings.color);
+            if (state.settings.lang === 'hi') {
+                document.documentElement.classList.add('lang-hi');
+            }
+            updateLanguage();
+            
+            // Check system theme
+            if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+            
+            renderHistory();
+            setupEventListeners();
+            setupPWA();
+        };
+
+        const updateLanguage = () => {
+            const lang = state.settings.lang;
+            $$('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (i18n[lang][key]) {
+                    el.textContent = i18n[lang][key];
+                }
+            });
+        };
+
+        // ==========================================
+        // 4. FILE HANDLING & DRAG/DROP
+        // ==========================================
+        const setupEventListeners = () => {
+            const dropZone = $('#dropZone');
+            const fileInput = $('#fileInput');
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.add('drag-over'), false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.remove('drag-over'), false);
+            });
+
+            dropZone.addEventListener('drop', handleDrop, false);
+            fileInput.addEventListener('change', handleFiles, false);
+            
+            // Clipboard paste
+            window.addEventListener('paste', (e) => {
+                const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+                const files = [];
+                for (let item of items) {
+                    if (item.kind === 'file') {
+                        files.push(item.getAsFile());
+                    }
+                }
+                if (files.length > 0) processFiles(files);
+            });
+
+            // UI Buttons
+            $('#btnTheme').addEventListener('click', toggleTheme);
+            $('#btnClearAll').addEventListener('click', clearAllFiles);
+            $('#btnGenerateLink').addEventListener('click', generateLinks);
+            $('#btnCopyLink').addEventListener('click', () => {
+                navigator.clipboard.writeText($('#shareLink').value);
+                showToast('Link copied to clipboard!');
+            });
+            
+            // Modals
+            $$('.close-modal').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.target.closest('.fixed').classList.add('hidden');
+                });
+            });
+
+            $('#btnHistory').addEventListener('click', () => $('#modalHistory').classList.remove('hidden'));
+            $('#btnSettings').addEventListener('click', () => $('#modalSettings').classList.remove('hidden'));
+            $('#btnTools').addEventListener('click', () => $('#modalTools').classList.remove('hidden'));
+
+            // Settings
+            $('#settingColor').addEventListener('input', (e) => {
+                state.settings.color = e.target.value;
+                document.documentElement.style.setProperty('--color-primary', e.target.value);
+                saveSettings();
+            });
+            $('#settingLang').addEventListener('change', (e) => {
+                state.settings.lang = e.target.value;
+                updateLanguage();
+                saveSettings();
+            });
+            $('#settingProvider').addEventListener('change', (e) => {
+                state.settings.provider = e.target.value;
+                saveSettings();
+            });
+
+            // Tools Tabs
+            $$('.tool-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    $$('.tool-tab').forEach(t => {
+                        t.classList.remove('bg-blue-50', 'dark:bg-blue-900/30', 'text-blue-600', 'dark:text-blue-400', 'font-medium');
+                        t.classList.add('hover:bg-gray-100', 'dark:hover:bg-gray-800');
+                    });
+                    tab.classList.add('bg-blue-50', 'dark:bg-blue-900/30', 'text-blue-600', 'dark:text-blue-400', 'font-medium');
+                    tab.classList.remove('hover:bg-gray-100', 'dark:hover:bg-gray-800');
+                    
+                    $$('.tool-content').forEach(c => c.classList.add('hidden'));
+                    $(`#tool-${tab.dataset.tool}`).classList.remove('hidden');
+                });
+            });
+
+            // Tool Actions
+            $('#btnGenerateHash').addEventListener('click', async () => {
+                const text = $('#hashInput').value;
+                const encoder = new TextEncoder();
+                const data = encoder.encode(text);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                $('#hashOutput').textContent = hashHex;
+            });
+
+            $('#btnB64Encode').addEventListener('click', () => {
+                try { $('#b64Output').value = btoa($('#b64Input').value); } 
+                catch (e) { showToast('Invalid input for Base64', 'error'); }
+            });
+            $('#btnB64Decode').addEventListener('click', () => {
+                try { $('#b64Output').value = atob($('#b64Input').value); } 
+                catch (e) { showToast('Invalid Base64 string', 'error'); }
+            });
+
+            $('#btnCreateZip').addEventListener('click', async () => {
+                const files = $('#zipInput').files;
+                if (files.length === 0) return showToast('Select files first', 'error');
+                const zip = new JSZip();
+                for (let file of files) {
+                    zip.file(file.name, file);
+                }
+                const content = await zip.generateAsync({type: "blob"});
+                const url = URL.createObjectURL(content);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = "archive.zip";
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast('ZIP downloaded!');
+            });
+
+            $('#btnGenerateToolQR').addEventListener('click', () => {
+                const container = $('#toolQrOutput');
+                container.innerHTML = '';
+                new QRCode(container, {
+                    text: $('#qrInput').value || "https://krishu.share",
+                    width: 128,
+                    height: 128
+                });
+            });
+
+            // Share buttons
+            $$('.share-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const platform = btn.dataset.platform;
+                    const url = encodeURIComponent($('#shareLink').value);
+                    const text = encodeURIComponent("Check out this file!");
+                    let shareUrl = '';
+                    if (platform === 'whatsapp') shareUrl = `https://wa.me/?text=${text}%20${url}`;
+                    if (platform === 'telegram') shareUrl = `https://t.me/share/url?url=${url}&text=${text}`;
+                    if (platform === 'facebook') shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+                    if (platform === 'x') shareUrl = `https://twitter.com/intent/tweet?url=${url}&text=${text}`;
+                    window.open(shareUrl, '_blank');
+                });
+            });
+
+            $('#btnNativeShare').addEventListener('click', async () => {
+                if (navigator.share) {
+                    try {
+                        await navigator.share({
+                            title: 'Krishu Share',
+                            text: 'Check out this file!',
+                            url: $('#shareLink').value
+                        });
+                    } catch (err) {
+                        console.log('Share canceled');
+                    }
+                } else {
+                    showToast('Web Share API not supported', 'error');
+                }
+            });
+        };
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles({ target: { files: files } });
+        }
+
+        function handleFiles(e) {
+            const files = [...e.target.files];
+            processFiles(files);
+        }
+
+        function processFiles(files) {
+            files.forEach(file => {
+                const fileObj = {
+                    id: crypto.randomUUID(),
+                    file: file,
+                    name: sanitize(file.name),
+                    size: file.size,
+                    type: file.type,
+                    date: new Date().toISOString(),
+                    url: null,
+                    provider: state.settings.provider
+                };
+                state.files.push(fileObj);
+            });
+            renderFileList();
+            $('#actionBar').classList.remove('hidden');
+            $('#fileCount').textContent = state.files.length;
+        }
+
+        function renderFileList() {
+            const container = $('#fileList');
+            container.innerHTML = '';
+            
+            state.files.forEach(file => {
+                const card = document.createElement('div');
+                card.className = 'glass-card rounded-xl p-4 flex flex-col gap-3 animate-fade-in group relative';
+                card.innerHTML = `
+                    <div class="flex items-start justify-between">
+                        <div class="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-2xl">
+                            <i class="fa-solid ${getFileIcon(file.type)}"></i>
+                        </div>
+                        <button class="delete-file text-gray-400 hover:text-red-500 transition" data-id="${file.id}" aria-label="Delete">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="min-w-0">
+                        <h4 class="font-semibold text-sm truncate" title="${file.name}">${file.name}</h4>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">${formatBytes(file.size)} • ${file.type || 'Unknown'}</p>
+                    </div>
+                    <div class="flex gap-2 mt-auto">
+                        <button class="preview-file flex-1 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition text-xs font-medium" data-id="${file.id}">
+                            <i class="fa-regular fa-eye mr-1"></i> Preview
+                        </button>
+                        <button class="download-file flex-1 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition text-xs font-medium" data-id="${file.id}">
+                            <i class="fa-solid fa-download mr-1"></i> Download
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            // Attach dynamic listeners
+            $$('.delete-file').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.currentTarget.dataset.id;
+                    state.files = state.files.filter(f => f.id !== id);
+                    renderFileList();
+                    if (state.files.length === 0) $('#actionBar').classList.add('hidden');
+                    $('#fileCount').textContent = state.files.length;
+                });
+            });
+
+            $$('.preview-file').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.currentTarget.dataset.id;
+                    const file = state.files.find(f => f.id === id);
+                    openPreview(file);
+                });
+            });
+
+            $$('.download-file').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.currentTarget.dataset.id;
+                    const file = state.files.find(f => f.id === id);
+                    const url = URL.createObjectURL(file.file);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = file.name;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                });
+            });
+        }
+
+        function clearAllFiles() {
+            state.files = [];
+            renderFileList();
+            $('#actionBar').classList.add('hidden');
+        }
+
+        // ==========================================
+        // 5. UPLOAD & LINK GENERATION
+        // ==========================================
+        async function generateLinks() {
+            if (state.files.length === 0) return;
+            
+            $('#modalProgress').classList.remove('hidden');
+            const file = state.files[0]; // Simplified for single file demo, can be extended to batch
+            
+            $('#progressFileName').textContent = file.name;
+            
+            if (state.settings.provider === 'local') {
+                // Simulate local processing
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += 10;
+                    $('#progressBar').style.width = `${progress}%`;
+                    $('#progressPercent').textContent = `${progress}%`;
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        setTimeout(() => {
+                            file.url = URL.createObjectURL(file.file);
+                            finalizeUpload(file);
+                        }, 500);
+                    }
+                }, 100);
+            } else {
+                // Cloud upload simulation (0x0.st example)
+                const formData = new FormData();
+                formData.append('file', file.file);
+                
+                const xhr = new XMLHttpRequest();
+                state.currentUpload = xhr;
+                
+                xhr.open('POST', 'https://0x0.st');
+                xhr.upload.onprogress = (e) => {
+                    if (e.lengthComputable) {
+                        const percent = Math.round((e.loaded / e.total) * 100);
+                        $('#progressBar').style.width = `${percent}%`;
+                        $('#progressPercent').textContent = `${percent}%`;
+                        const speed = formatBytes(e.loaded / ((Date.now() - startTime) / 1000)) + '/s';
+                        $('#progressSpeed').textContent = speed;
+                    }
+                };
+                
+                const startTime = Date.now();
+                xhr.onload = () => {
+                    if (xhr.status === 200) {
+                        file.url = xhr.responseText.trim();
+                        finalizeUpload(file);
+                    } else {
+                        showToast('Upload failed', 'error');
+                        $('#modalProgress').classList.add('hidden');
+                    }
+                };
+                xhr.onerror = () => {
+                    showToast('Network error', 'error');
+                    $('#modalProgress').classList.add('hidden');
+                };
+                xhr.send(formData);
+            }
+        }
+
+        function finalizeUpload(file) {
+            $('#modalProgress').classList.add('hidden');
+            
+            // Save to history
+            const historyItem = {
+                id: file.id,
+                name: file.name,
+                size: file.size,
+                url: file.url,
+                date: new Date().toLocaleDateString(),
+                type: file.type
+            };
+            state.history.unshift(historyItem);
+            localStorage.setItem('krishu_history', JSON.stringify(state.history));
+            renderHistory();
+            
+            // Show Link Modal
+            $('#shareLink').value = file.url || 'https://krishu.share/local/' + file.id;
+            $('#modalLink').classList.remove('hidden');
+            
+            // Generate QR
+            $('#qrcode').innerHTML = '';
+            state.qrCode = new QRCode($('#qrcode'), {
+                text: $('#shareLink').value,
+                width: 128,
+                height: 128,
+                colorDark: document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000',
+                colorLight: document.documentElement.classList.contains('dark') ? '#000000' : '#ffffff',
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            if (state.settings.autoCopy) {
+                navigator.clipboard.writeText($('#shareLink').value);
+                showToast('Link copied!');
+            }
+        }
+
+        $('#btnCancelUpload').addEventListener('click', () => {
+            if (state.currentUpload) {
+                state.currentUpload.abort();
+                $('#modalProgress').classList.add('hidden');
+                showToast('Upload canceled', 'error');
+            }
+        });
+
+        // ==========================================
+        // 6. PREVIEW SYSTEM
+        // ==========================================
+        let currentZoom = 1;
+        let currentRotation = 0;
+
+        function openPreview(file) {
+            const modal = $('#modalPreview');
+            const img = $('#previewImage');
+            const video = $('#previewVideo');
+            const pdf = $('#previewPdf');
+            const controls = $('#previewControls');
+            
+            img.classList.add('hidden');
+            video.classList.add('hidden');
+            pdf.classList.add('hidden');
+            controls.classList.add('hidden');
+            
+            currentZoom = 1;
+            currentRotation = 0;
+            updateTransform();
+
+            const url = URL.createObjectURL(file.file);
+            
+            if (file.type.startsWith('image/')) {
+                img.src = url;
+                img.classList.remove('hidden');
+                controls.classList.remove('hidden');
+            } else if (file.type.startsWith('video/')) {
+                video.src = url;
+                video.classList.remove('hidden');
+                video.play();
+            } else if (file.type.includes('pdf')) {
+                pdf.src = url;
+                pdf.classList.remove('hidden');
+            } else {
+                showToast('Preview not available for this file type', 'error');
+                return;
+            }
+            
+            modal.classList.remove('hidden');
+            
+            // Cleanup on close
+            modal.querySelector('.close-modal').onclick = () => {
+                modal.classList.add('hidden');
+                video.pause();
+                video.src = '';
+                img.src = '';
+                pdf.src = '';
+                URL.revokeObjectURL(url);
+            };
+        }
+
+        function updateTransform() {
+            $('#previewImage').style.transform = `scale(${currentZoom}) rotate(${currentRotation}deg)`;
+        }
+
+        $('#btnZoomIn').addEventListener('click', () => { currentZoom += 0.2; updateTransform(); });
+        $('#btnZoomOut').addEventListener('click', () => { if (currentZoom > 0.4) currentZoom -= 0.2; updateTransform(); });
+        $('#btnRotate').addEventListener('click', () => { currentRotation += 90; updateTransform(); });
+        $('#btnDownloadPreview').addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.href = $('#previewImage').src || $('#previewVideo').src;
+            link.download = 'download';
+            link.click();
+        });
+
+        // ==========================================
+        // 7. HISTORY & SETTINGS
+        // ==========================================
+        function renderHistory() {
+            const tbody = $('#historyList');
+            tbody.innerHTML = '';
+            
+            const filter = $('#historyFilter').value;
+            const search = $('#historySearch').value.toLowerCase();
+            
+            const filtered = state.history.filter(item => {
+                const matchesSearch = item.name.toLowerCase().includes(search);
+                const matchesFilter = filter === 'all' || item.type.includes(filter);
+                return matchesSearch && matchesFilter;
+            });
+            
+            filtered.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-50 dark:hover:bg-gray-800/50 transition';
+                tr.innerHTML = `
+                    <td class="px-4 py-3 font-medium flex items-center gap-2">
+                        <i class="fa-solid ${getFileIcon(item.type)}"></i>
+                        <span class="truncate max-w-[150px]">${sanitize(item.name)}</span>
+                    </td>
+                    <td class="px-4 py-3 text-gray-500">${formatBytes(item.size)}</td>
+                    <td class="px-4 py-3 text-gray-500">${item.date}</td>
+                    <td class="px-4 py-3 text-right">
+                        <button class="copy-history text-blue-500 hover:text-blue-600 mr-2" data-url="${item.url}"><i class="fa-regular fa-copy"></i></button>
+                        <button class="delete-history text-red-500 hover:text-red-600" data-id="${item.id}"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            $$('.copy-history').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    navigator.clipboard.writeText(btn.dataset.url);
+                    showToast('Link copied!');
+                });
+            });
+            
+            $$('.delete-history').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    state.history = state.history.filter(h => h.id !== btn.dataset.id);
+                    localStorage.setItem('krishu_history', JSON.stringify(state.history));
+                    renderHistory();
+                });
+            });
+        }
+
+        $('#historySearch').addEventListener('input', renderHistory);
+        $('#historyFilter').addEventListener('change', renderHistory);
+
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+        }
+
+        function saveSettings() {
+            localStorage.setItem('krishu_settings', JSON.stringify(state.settings));
+        }
+
+        // ==========================================
+        // 8. PWA & SERVICE WORKER
+        // ==========================================
+        function setupPWA() {
+            const swCode = `
+                self.addEventListener('install', e => e.waitUntil(self.skipWaiting()));
+                self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+                self.addEventListener('fetch', e => {
+                    e.respondWith(fetch(e.request).catch(() => new Response('Offline')));
+                });
+            `;
+            const blob = new Blob([swCode], { type: 'application/javascript' });
+            const swUrl = URL.createObjectURL(blob);
+            
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register(swUrl).catch(err => console.log('SW registration failed'));
+            }
+        }
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
