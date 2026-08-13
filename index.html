@@ -5,57 +5,65 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Krishna AI</title>
     
-    <!-- Tailwind CSS for styling -->
+    <!-- Tailwind CSS for ChatGPT like styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Phosphor Icons for UI elements -->
+    <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     
-    <!-- Marked.js for parsing Markdown -->
+    <!-- Marked.js for Markdown rendering -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    
-    <!-- Highlight.js for Code Syntax Highlighting -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
         body {
-            font-family: 'Inter', sans-serif;
             background-color: #212121;
             color: #ececec;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
 
-        .chat-container::-webkit-scrollbar { width: 6px; }
-        .chat-container::-webkit-scrollbar-track { background: transparent; }
-        .chat-container::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 10px; }
-        .chat-container::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #777; }
 
-        textarea::-webkit-scrollbar { display: none; }
-        textarea { -ms-overflow-style: none; scrollbar-width: none; }
-
-        .prose p { margin-bottom: 1rem; line-height: 1.7; }
-        .prose p:last-child { margin-bottom: 0; }
-        .prose ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
-        .prose ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 1rem; }
-        .prose strong { color: #ffffff; font-weight: 600; }
-        .prose a { color: #3b82f6; text-decoration: underline; }
-        .prose code:not(pre code) {
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            background-color: rgba(255, 255, 255, 0.1);
-            padding: 0.15rem 0.3rem;
-            border-radius: 0.375rem;
-            font-size: 0.85em;
+        .chat-container {
+            scroll-behavior: smooth;
         }
 
+        /* Markdown Styles */
+        .prose pre {
+            background-color: #0d0d0d !important;
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #333;
+        }
+        .prose code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            color: #e5e5e5;
+            background: #333;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        .prose pre code {
+            background: transparent;
+            padding: 0;
+            color: #10b981; /* Greenish code color */
+        }
+        .prose p { margin-bottom: 10px; }
+
+        /* Typing indicator animation */
         .typing-indicator span {
             display: inline-block;
             width: 6px;
             height: 6px;
-            background-color: #a3a3a3;
+            background-color: #888;
             border-radius: 50%;
-            margin-right: 4px;
+            margin: 0 2px;
             animation: bounce 1.4s infinite ease-in-out both;
         }
         .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
@@ -64,399 +72,228 @@
             0%, 80%, 100% { transform: scale(0); }
             40% { transform: scale(1); }
         }
-
-        .fade-in {
-            animation: fadeIn 0.3s ease-in-out;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Sidebar transitions */
-        #sidebar { transition: width 0.3s ease, padding 0.3s ease, opacity 0.3s ease; }
-        .sidebar-closed { width: 0 !important; padding-left: 0 !important; padding-right: 0 !important; opacity: 0; overflow: hidden; }
-
-        /* Canvas transitions */
-        #canvas-panel { transition: width 0.3s ease; }
-        .canvas-open { width: 50% !important; border-left: 1px solid rgba(255,255,255,0.1); }
-        @media (max-width: 768px) {
-            .canvas-open { width: 100% !important; position: absolute; right: 0; top: 0; height: 100%; z-index: 50; }
-        }
     </style>
 </head>
-
-<body class="h-screen w-full flex overflow-hidden selection:bg-gray-700 selection:text-white text-gray-200">
+<body class="flex h-screen overflow-hidden">
 
     <!-- Sidebar -->
-    <aside id="sidebar" class="w-[260px] bg-[#171717] flex flex-col h-full z-20 shrink-0 border-r border-white/10 hidden md:flex">
-        <div class="p-3 flex items-center justify-between">
-            <button onclick="location.reload()" class="flex-1 flex items-center gap-2 p-2 rounded-lg hover:bg-[#212121] transition-colors text-sm font-medium text-gray-200 group">
-                <div class="w-7 h-7 rounded-full bg-transparent flex items-center justify-center group-hover:bg-white group-hover:text-black transition-colors">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg" alt="AI" class="w-5 h-5 invert group-hover:invert-0 transition-all">
-                </div>
-                <span>New chat</span>
+    <aside class="w-[260px] bg-[#171717] flex-col h-full shrink-0 border-r border-white/10 hidden md:flex">
+        <div class="p-3">
+            <button onclick="clearChat()" class="w-full flex items-center gap-2 p-3 rounded-lg hover:bg-[#212121] transition-colors text-sm font-medium text-gray-200">
+                <i class="ph ph-plus text-lg"></i>
+                New chat
                 <i class="ph ph-note-pencil text-lg ml-auto text-gray-400"></i>
-            </button>
-            <button onclick="toggleSidebar()" class="p-2 ml-1 text-gray-400 hover:text-white rounded-lg hover:bg-[#212121] transition-colors" title="Close sidebar">
-                <i class="ph ph-sidebar-simple text-xl"></i>
             </button>
         </div>
         
-        <div class="flex-1 overflow-y-auto p-3 text-sm">
-            <div class="px-2 pb-2 text-xs font-semibold text-gray-500">Today</div>
-            <div class="p-2 rounded-lg bg-[#212121] text-gray-200 cursor-pointer truncate">
-                Krishna AI Setup
+        <div class="flex-1 overflow-y-auto p-3">
+            <div class="px-2 pb-2 text-xs font-semibold text-gray-500">History</div>
+            <div class="p-2 rounded-lg bg-[#212121] text-gray-200 text-sm cursor-pointer truncate">
+                Krishna AI Conversation
             </div>
         </div>
         
         <div class="p-3 border-t border-white/10">
             <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-[#212121] cursor-pointer transition-colors">
                 <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white text-sm shrink-0">
-                    K
+                    U
                 </div>
-                <div class="text-sm font-medium text-gray-200 truncate">Krishna</div>
+                <div class="text-sm font-medium text-gray-200 truncate">User</div>
             </div>
         </div>
     </aside>
 
-    <!-- Main Content Area -->
-    <main class="flex-1 flex flex-col h-full relative w-full bg-[#212121] min-w-0">
+    <!-- Main Chat Area -->
+    <main class="flex-1 flex flex-col relative h-full w-full bg-[#212121]">
         
-        <!-- Header -->
-        <header class="flex items-center justify-between p-3 text-gray-200 z-10 w-full absolute top-0 left-0 bg-gradient-to-b from-[#212121] to-transparent">
-            <div class="flex items-center gap-2">
-                <button id="mobileSidebarToggle" onclick="toggleSidebar()" class="p-2 text-gray-400 hover:text-white rounded-md flex md:hidden">
-                    <i class="ph ph-list text-2xl"></i>
-                </button>
-                <button id="openSidebarBtn" onclick="toggleSidebar()" class="p-2 text-gray-400 hover:text-white rounded-md hidden hover:bg-[#2f2f2f] transition-colors" title="Open sidebar">
-                    <i class="ph ph-sidebar-simple text-xl"></i>
-                </button>
-                <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-[#2f2f2f] cursor-pointer transition-colors font-medium text-lg text-gray-200">
-                    Krishna AI 
-                    <span class="text-gray-500 text-sm ml-1">gemma2:2b</span>
-                    <i class="ph-bold ph-caret-down text-sm text-gray-400"></i>
-                </div>
+        <!-- Header (Mobile visible, Desktop minimal) -->
+        <header class="flex items-center justify-between p-3 absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-[#212121] to-transparent">
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium text-lg text-gray-200">
+                Krishna AI 
+                <span class="text-gray-500 text-xs ml-1 border border-gray-600 rounded px-1">gemma2:2b</span>
             </div>
-            <button onclick="location.reload()" class="p-2 text-gray-400 hover:text-white rounded-md md:hidden">
+            <button onclick="clearChat()" class="p-2 text-gray-400 hover:text-white md:hidden">
                 <i class="ph ph-note-pencil text-xl"></i>
             </button>
         </header>
 
         <!-- Chat Container -->
-        <div id="chat" class="chat-container flex-1 overflow-y-auto w-full pb-40 pt-16 scroll-smooth flex flex-col items-center">
+        <div id="chat" class="chat-container flex-1 overflow-y-auto w-full pb-32 pt-16 flex flex-col items-center">
             
-            <div id="welcome-screen" class="flex-1 flex flex-col items-center justify-center px-4 w-full max-w-3xl fade-in mt-10 md:mt-0">
-                <div class="w-16 h-16 rounded-full bg-white flex items-center justify-center mb-6 shadow-lg shadow-black/20">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg" alt="Krishna AI" class="w-10 h-10">
+            <!-- Welcome Screen -->
+            <div id="welcome-screen" class="flex-1 flex flex-col items-center justify-center px-4 w-full max-w-3xl">
+                <div class="w-16 h-16 rounded-full bg-white flex items-center justify-center mb-6 shadow-lg">
+                    <span class="text-3xl font-bold text-black">K</span>
                 </div>
-                <h1 class="text-2xl md:text-3xl font-semibold text-white mb-8 text-center tracking-tight">How can I help you today?</h1>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
-                    <button onclick="setInputAndSend('Who created you?')" class="p-4 rounded-xl border border-white/10 text-left hover:bg-[#2f2f2f] transition-colors group">
-                        <div class="font-medium text-sm text-gray-200">Who created you?</div>
-                        <div class="text-sm text-gray-500 group-hover:text-gray-400 mt-1">Ask about my developer</div>
-                    </button>
-                    <button onclick="setInputAndSend('Tell me about Krishna.')" class="p-4 rounded-xl border border-white/10 text-left hover:bg-[#2f2f2f] transition-colors group">
-                        <div class="font-medium text-sm text-gray-200">Tell me about Krishna</div>
-                        <div class="text-sm text-gray-500 group-hover:text-gray-400 mt-1">Learn about BCA 1st Year student</div>
-                    </button>
-                    <button onclick="setInputAndSend('Write a Python script for a calculator.')" class="p-4 rounded-xl border border-white/10 text-left hover:bg-[#2f2f2f] transition-colors group hidden md:block">
-                        <div class="font-medium text-sm text-gray-200">Code a Calculator</div>
-                        <div class="text-sm text-gray-500 group-hover:text-gray-400 mt-1">In Python</div>
-                    </button>
-                    <button onclick="setInputAndSend('What are some good habits for programmers?')" class="p-4 rounded-xl border border-white/10 text-left hover:bg-[#2f2f2f] transition-colors group hidden md:block">
-                        <div class="font-medium text-sm text-gray-200">Good habits for programmers</div>
-                        <div class="text-sm text-gray-500 group-hover:text-gray-400 mt-1">Tips and tricks</div>
-                    </button>
-                </div>
+                <h1 class="text-2xl md:text-3xl font-semibold text-white mb-8 text-center">How can I help you today?</h1>
             </div>
 
         </div>
 
         <!-- Input Area -->
-        <div class="absolute bottom-0 w-full bg-gradient-to-t from-[#212121] via-[#212121] to-transparent pt-6 pb-4 z-10">
-            <div class="max-w-3xl mx-auto px-4 w-full">
-                <div class="relative flex items-end w-full p-2 bg-[#2f2f2f] rounded-3xl focus-within:bg-[#333] transition-colors shadow-lg shadow-black/10">
+        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#212121] via-[#212121] to-transparent pt-6 pb-6 px-4 md:px-0 flex justify-center">
+            <div class="w-full max-w-3xl relative">
+                <div class="bg-[#2f2f2f] rounded-[24px] flex items-end p-2 shadow-lg border border-white/5">
                     
-                    <button class="p-2.5 text-gray-400 hover:text-white rounded-full transition-colors mb-0.5">
+                    <button class="p-2.5 text-gray-400 hover:text-gray-200 rounded-full transition-colors mb-0.5">
                         <i class="ph ph-paperclip text-xl"></i>
                     </button>
                     
                     <textarea 
                         id="message" 
-                        rows="1" 
-                        class="w-full max-h-48 py-3 px-2 bg-transparent text-white resize-none outline-none focus:ring-0 placeholder-gray-400 m-0 text-[15px] leading-relaxed" 
+                        class="flex-1 bg-transparent border-none outline-none text-white resize-none max-h-48 py-3 px-2 focus:ring-0 leading-relaxed text-[15.5px]"
                         placeholder="Message Krishna AI..."
+                        rows="1"
+                        oninput="this.style.height = ''; this.style.height = Math.min(this.scrollHeight, 200) + 'px';"
+                        onkeydown="handleKeydown(event)"
                     ></textarea>
                     
                     <button 
                         id="sendBtn" 
-                        onclick="sendMessage()" 
-                        class="p-2 mb-1 mr-1 w-9 h-9 flex items-center justify-center rounded-full bg-[#444] text-gray-500 transition-colors shrink-0"
+                        onclick="sendMessage()"
+                        class="p-2.5 mb-0.5 ml-2 bg-[#444] text-gray-500 rounded-full transition-all flex items-center justify-center h-[38px] w-[38px]"
                         disabled
                     >
-                        <i class="ph-bold ph-arrow-up text-lg"></i>
+                        <i class="ph-fill ph-arrow-up text-lg"></i>
                     </button>
                 </div>
-                
-                <div class="text-center text-xs text-gray-400 mt-3">
+                <div class="text-center text-xs text-gray-500 mt-3">
                     Krishna AI can make mistakes. Consider verifying important information.
                 </div>
             </div>
         </div>
+
     </main>
 
-    <!-- Canvas Panel -->
-    <aside id="canvas-panel" class="w-0 bg-[#1e1e1e] flex flex-col h-full z-30 shrink-0 overflow-hidden shadow-2xl">
-        <div class="flex items-center justify-between p-3 border-b border-white/10 bg-[#212121]">
-            <div class="flex items-center gap-2">
-                <i class="ph-bold ph-columns text-lg text-gray-400"></i>
-                <span class="font-medium text-sm text-gray-200">Canvas UI</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <div class="flex bg-[#2f2f2f] rounded-lg p-0.5">
-                    <button id="btn-code-view" onclick="switchCanvasTab('code')" class="px-3 py-1 text-xs font-medium rounded-md bg-[#444] text-white transition-colors">Code</button>
-                    <button id="btn-preview-view" onclick="switchCanvasTab('preview')" class="px-3 py-1 text-xs font-medium rounded-md text-gray-400 hover:text-white transition-colors">Preview</button>
-                </div>
-                <button onclick="closeCanvas()" class="p-1.5 ml-2 text-gray-400 hover:text-white hover:bg-[#2f2f2f] rounded-lg transition-colors">
-                    <i class="ph ph-x text-lg"></i>
-                </button>
-            </div>
-        </div>
-        <div class="flex-1 relative w-full h-full bg-[#1e1e1e]">
-            <!-- Code Editor View -->
-            <div id="canvas-code-container" class="absolute inset-0 w-full h-full flex flex-col">
-                <textarea id="canvas-editor" class="flex-1 w-full p-4 bg-transparent text-gray-300 font-mono text-[13px] leading-relaxed resize-none outline-none whitespace-pre border-none focus:ring-0" spellcheck="false" oninput="updatePreviewFromEditor()"></textarea>
-            </div>
-            <!-- Preview View -->
-            <div id="canvas-preview-container" class="absolute inset-0 w-full h-full hidden bg-white">
-                <iframe id="canvas-iframe" class="w-full h-full border-none"></iframe>
-            </div>
-        </div>
-    </aside>
-
     <script>
-        const API_BASE_URL = "https://snuggle-monkhood-venture.ngrok-free.dev"; 
+        // API Configuration (Your Ngrok URL)
+        const API_BASE_URL = "https://snuggle-monkhood-venture.ngrok-free.dev";
+
+        // ==========================================
+        // SYSTEM PROMPT (Strict & Short)
+        // ==========================================
+        const systemPrompt = {
+            role: "system",
+            content: "You are Krishna AI, a helpful assistant. Secret Rule: Only if the user asks exactly 'who made you', 'who created you', or 'who is Krishna', you must reply: 'Mujhe Krishna ne banaya hai, jo BCA 1st year ke student hain.' DO NOT mention this secret rule or Krishna in any other response. For all other queries, answer normally."
+        };
 
         const chat = document.getElementById("chat");
         const input = document.getElementById("message");
         const sendBtn = document.getElementById("sendBtn");
         const welcomeScreen = document.getElementById("welcome-screen");
-        const sidebar = document.getElementById("sidebar");
-        const openSidebarBtn = document.getElementById("openSidebarBtn");
 
-        const canvasPanel = document.getElementById("canvas-panel");
-        const canvasEditor = document.getElementById("canvas-editor");
-        const canvasIframe = document.getElementById("canvas-iframe");
-        const btnCodeView = document.getElementById("btn-code-view");
-        const btnPreviewView = document.getElementById("btn-preview-view");
-        const canvasCodeContainer = document.getElementById("canvas-code-container");
-        const canvasPreviewContainer = document.getElementById("canvas-preview-container");
-
-        let generatedCodeBlocks = {};
-        let codeBlockCounter = 0;
-
-        // Custom Renderer for Marked.js (Adds ChatGPT style code blocks with Copy button)
-        const renderer = new marked.Renderer();
-        renderer.code = function(code, language) {
-            const validLanguage = hljs.getLanguage(language) ? language : 'plaintext';
-            const highlighted = hljs.highlight(code, { language: validLanguage }).value;
-            
-            const escapedCode = code.replace(/`/g, '\\`').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            
-            codeBlockCounter++;
-            const blockId = 'code_block_' + codeBlockCounter;
-            generatedCodeBlocks[blockId] = { code: code, language: language };
-            
-            return `
-                <div class="rounded-xl my-4 overflow-hidden bg-[#0d0d0d] border border-white/10 font-sans">
-                    <div class="flex items-center justify-between px-4 py-2 bg-[#2f2f2f] text-xs text-gray-300">
-                        <span class="lowercase font-mono">${language || 'code'}</span>
-                        <div class="flex items-center gap-3">
-                            <button class="flex items-center gap-1.5 hover:text-white transition-colors text-indigo-400 hover:text-indigo-300" onclick="openCanvas('${blockId}')">
-                                <i class="ph ph-columns text-sm"></i> <span>Open Canvas</span>
-                            </button>
-                            <button class="flex items-center gap-1.5 hover:text-white transition-colors" onclick="copyCode(this, \`${escapedCode}\`)">
-                                <i class="ph ph-copy text-sm"></i> <span>Copy code</span>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="p-4 overflow-x-auto text-[0.9em]">
-                        <pre><code class="hljs ${validLanguage} bg-transparent p-0 m-0 leading-relaxed font-mono">${highlighted}</code></pre>
-                    </div>
-                </div>
-            `;
-        };
-        marked.use({ renderer, breaks: true });
-
-        // Canvas Functions
-        function openCanvas(blockId) {
-            const block = generatedCodeBlocks[blockId];
-            if (!block) return;
-            
-            canvasEditor.value = block.code;
-            canvasPanel.classList.add("canvas-open");
-            
-            // Auto switch to preview if it's HTML
-            let isWebCode = ['html', 'javascript', 'css', 'js', 'xml'].includes(block.language?.toLowerCase());
-            if (isWebCode || block.code.includes('<html') || block.code.includes('<div')) {
-                switchCanvasTab('preview');
-            } else {
-                switchCanvasTab('code');
-            }
-        }
-
-        function closeCanvas() {
-            canvasPanel.classList.remove("canvas-open");
-        }
-
-        function switchCanvasTab(tab) {
-            if (tab === 'code') {
-                btnCodeView.classList.replace("text-gray-400", "text-white");
-                btnCodeView.classList.replace("hover:text-white", "bg-[#444]");
-                btnPreviewView.classList.replace("text-white", "text-gray-400");
-                btnPreviewView.classList.replace("bg-[#444]", "hover:text-white");
-                
-                canvasCodeContainer.classList.remove("hidden");
-                canvasPreviewContainer.classList.add("hidden");
-            } else {
-                btnPreviewView.classList.replace("text-gray-400", "text-white");
-                btnPreviewView.classList.replace("hover:text-white", "bg-[#444]");
-                btnCodeView.classList.replace("text-white", "text-gray-400");
-                btnCodeView.classList.replace("bg-[#444]", "hover:text-white");
-                
-                canvasCodeContainer.classList.add("hidden");
-                canvasPreviewContainer.classList.remove("hidden");
-                
-                updatePreviewFromEditor();
-            }
-        }
-        
-        function updatePreviewFromEditor() {
-            const code = canvasEditor.value;
-            const doc = canvasIframe.contentWindow.document;
-            doc.open();
-            doc.write(code);
-            doc.close();
-        }
-
-        // Copy Code Function
-        function copyCode(btn, code) {
-            navigator.clipboard.writeText(code).then(() => {
-                const originalText = btn.innerHTML;
-                btn.innerHTML = `<i class="ph ph-check text-sm text-green-400"></i> <span class="text-green-400">Copied!</span>`;
-                setTimeout(() => {
-                    btn.innerHTML = originalText;
-                }, 2000);
-            });
-        }
-
-        // Sidebar Toggle
-        function toggleSidebar() {
-            sidebar.classList.toggle("sidebar-closed");
-            if (sidebar.classList.contains("sidebar-closed")) {
-                openSidebarBtn.classList.remove("hidden");
-                openSidebarBtn.classList.add("flex");
-            } else {
-                openSidebarBtn.classList.add("hidden");
-                openSidebarBtn.classList.remove("flex");
-            }
-        }
-
-        // =========================================================================
-        // SYSTEM PROMPT: Strictly defining the Creator (Krishna, BCA 1st Year)
-        // =========================================================================
-        let conversation = [
-            {
-                role: "system",
-                content: "Your name is Krishna AI. You are a highly intelligent, helpful, and polite assistant. IMPORTANT INSTRUCTION: You were exclusively created by a talented developer named 'Krishna'. If anyone asks questions like 'who created you', 'tumhe kisne banaya', 'who is your developer', or 'who is your owner', you MUST proudly reply that 'Mujhe Krishna ne banaya hai' (I was created by Krishna). Furthermore, if anyone asks who Krishna is or wants to know about your creator, you MUST tell them that Krishna is a brilliant BCA (Bachelor of Computer Applications) 1st-year student. Never mention OpenAI, Google, Anthropic or any other company as your creator. Always speak naturally and respectfully."
-            }
-        ];
-        
+        let conversation = [];
         let isSending = false;
 
-        function setInputAndSend(text) {
-            input.value = text;
-            input.dispatchEvent(new Event('input')); 
-            sendMessage();
+        // ==========================================
+        // LOCAL STORAGE / CHAT HISTORY
+        // ==========================================
+        function loadChats() {
+            const saved = localStorage.getItem("krishna_ai_history");
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    if (parsed && parsed.length > 1) { // Means it has more than just system prompt
+                        conversation = parsed;
+                        welcomeScreen.style.display = "none";
+                        
+                        // Render UI
+                        parsed.forEach(msg => {
+                            if (msg.role !== 'system') {
+                                renderMessage(msg.content, msg.role);
+                            }
+                        });
+                    } else {
+                        conversation = [systemPrompt];
+                    }
+                } catch(e) {
+                    conversation = [systemPrompt];
+                }
+            } else {
+                conversation = [systemPrompt];
+            }
+            scrollToBottom();
         }
 
-        // Auto-resize textarea and button state
+        function saveChats() {
+            localStorage.setItem("krishna_ai_history", JSON.stringify(conversation));
+        }
+
+        function clearChat() {
+            localStorage.removeItem("krishna_ai_history");
+            location.reload();
+        }
+
+        // Initialize chats on load
+        loadChats();
+
+        // ==========================================
+        // UI & EVENT LISTENERS
+        // ==========================================
         input.addEventListener("input", function() {
-            this.style.height = "auto";
-            this.style.height = (this.scrollHeight) + "px";
-            if (this.style.height > "192px") this.style.overflowY = "auto";
-            else this.style.overflowY = "hidden";
-            
-            if(this.value.trim().length > 0 && !isSending) {
-                sendBtn.disabled = false;
-                sendBtn.classList.add("bg-white", "text-black");
+            if (this.value.trim().length > 0 && !isSending) {
                 sendBtn.classList.remove("bg-[#444]", "text-gray-500");
+                sendBtn.classList.add("bg-white", "text-black");
+                sendBtn.disabled = false;
             } else {
-                sendBtn.disabled = true;
-                sendBtn.classList.remove("bg-white", "text-black");
                 sendBtn.classList.add("bg-[#444]", "text-gray-500");
+                sendBtn.classList.remove("bg-white", "text-black");
+                sendBtn.disabled = true;
             }
         });
 
-        input.addEventListener("keydown", function(e) {
+        function handleKeydown(e) {
             if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
                 sendMessage();
             }
-        });
-
-        function escapeHTML(str) {
-            return str.replace(/[&<>'"]/g, 
-                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
-            );
         }
 
-        function addMessageToUI(text, role, isMarkdown = false) {
-            if (welcomeScreen && welcomeScreen.style.display !== 'none') {
-                welcomeScreen.style.display = 'none';
-            }
+        function scrollToBottom() {
+            setTimeout(() => {
+                chat.scrollTop = chat.scrollHeight;
+            }, 100);
+        }
 
-            const isUser = role === "user";
+        function renderMessage(text, role) {
             const div = document.createElement("div");
-            div.className = "w-full flex justify-center py-5 px-4 fade-in";
+            div.className = "w-full flex justify-center py-5 px-4 md:px-0";
             
-            let contentHTML = isMarkdown ? marked.parse(text) : escapeHTML(text);
-
-            if (isUser) {
+            if (role === "user") {
                 div.innerHTML = `
                     <div class="max-w-3xl w-full flex justify-end">
-                        <div class="bg-[#2f2f2f] text-gray-100 px-5 py-3 rounded-3xl max-w-[75%] break-words text-[15.5px] leading-relaxed shadow-sm">
-                            ${contentHTML.replace(/\n/g, '<br>')}
+                        <div class="bg-[#2f2f2f] text-gray-100 px-5 py-3 rounded-3xl max-w-[75%] break-words text-[15.5px]">
+                            ${text.replace(/\n/g, '<br>')}
                         </div>
                     </div>
                 `;
             } else {
+                // Parse markdown for AI responses
+                const parsedHTML = marked.parse(text);
                 div.innerHTML = `
                     <div class="max-w-3xl w-full flex gap-4">
-                        <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center flex-shrink-0 mt-1 border border-white/10 shadow-sm">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg" alt="AI" class="w-5 h-5">
+                        <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center flex-shrink-0 mt-1">
+                            <span class="text-black font-bold text-sm">K</span>
                         </div>
-                        <div class="flex-1 prose prose-invert max-w-none text-gray-100 text-[15.5px] leading-relaxed min-w-0 font-sans">
-                            ${contentHTML}
+                        <div class="flex-1 prose prose-invert max-w-none text-gray-100 text-[15.5px] leading-relaxed min-w-0">
+                            ${parsedHTML}
                         </div>
                     </div>
                 `;
             }
 
             chat.appendChild(div);
-            chat.scrollTop = chat.scrollHeight;
-            return div;
+            scrollToBottom();
         }
 
-        function addLoadingIndicator() {
+        function showLoading() {
             const div = document.createElement("div");
-            div.className = "w-full flex justify-center py-5 px-4 fade-in";
+            div.id = "loading-indicator";
+            div.className = "w-full flex justify-center py-5 px-4 md:px-0";
             div.innerHTML = `
                 <div class="max-w-3xl w-full flex gap-4">
-                    <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center flex-shrink-0 mt-1 border border-white/10 shadow-sm">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg" alt="AI" class="w-5 h-5">
+                    <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center flex-shrink-0 mt-1">
+                        <span class="text-black font-bold text-sm">K</span>
                     </div>
                     <div class="flex-1 mt-3 typing-indicator">
                         <span></span><span></span><span></span>
@@ -464,32 +301,45 @@
                 </div>
             `;
             chat.appendChild(div);
-            chat.scrollTop = chat.scrollHeight;
-            return div;
+            scrollToBottom();
         }
 
+        function removeLoading() {
+            const loader = document.getElementById("loading-indicator");
+            if (loader) loader.remove();
+        }
+
+        // ==========================================
+        // API CALL
+        // ==========================================
         async function sendMessage() {
             const text = input.value.trim();
             if (!text || isSending) return;
 
+            welcomeScreen.style.display = "none";
             isSending = true;
-            sendBtn.disabled = true;
-            input.disabled = true;
-
-            input.style.height = "48px"; 
+            
+            // Reset input UI
             input.value = "";
-            sendBtn.classList.remove("bg-white", "text-black");
+            input.style.height = 'auto';
             sendBtn.classList.add("bg-[#444]", "text-gray-500");
+            sendBtn.classList.remove("bg-white", "text-black");
+            sendBtn.disabled = true;
 
-            addMessageToUI(text, "user");
+            // Render User Message
+            renderMessage(text, "user");
             conversation.push({ role: "user", content: text });
+            saveChats();
 
-            const loadingElement = addLoadingIndicator();
+            showLoading();
 
             try {
                 const response = await fetch(API_BASE_URL + "/api/chat", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        "Content-Type": "application/json",
+                        "ngrok-skip-browser-warning": "true" // Important for Ngrok
+                    },
                     body: JSON.stringify({
                         model: "gemma2:2b",
                         messages: conversation
@@ -497,25 +347,26 @@
                 });
 
                 const data = await response.json();
-                loadingElement.remove();
+                removeLoading();
 
                 if (!response.ok) {
-                    addMessageToUI("⚠️ **Error:** " + (data.error || data.details || "API Error"), "ai", true);
+                    const errorMsg = "Error: " + (data.error || "Server issue");
+                    renderMessage(errorMsg, "assistant");
                     return;
                 }
 
-                const reply = data.reply || data.message?.content || "No response generated.";
-
+                const reply = data.reply || data.message?.content || "No response.";
+                
+                // Add AI reply to conversation and UI
                 conversation.push({ role: "assistant", content: reply });
-                addMessageToUI(reply, "ai", true);
+                renderMessage(reply, "assistant");
+                saveChats();
 
             } catch (error) {
-                loadingElement.remove();
-                addMessageToUI("🚨 **Connection Error:** Server se connect nahi ho pa raha hai. Ensure your Python server is running.\n\n`" + error.message + "`", "ai", true);
+                removeLoading();
+                renderMessage("Server se connect nahi ho pa raha hai. (Ensure Ngrok is running)\n\n" + error.message, "assistant");
             } finally {
                 isSending = false;
-                input.disabled = false;
-                input.focus();
             }
         }
     </script>
