@@ -1,970 +1,523 @@
 <!DOCTYPE html>
-<html lang="en" class="light">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Krishu Share</title>
+    <title>Krishna AI</title>
     
-    <!-- Google Identity Services -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <!-- QR Code Generator -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Phosphor Icons for UI elements -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <!-- Marked.js for parsing Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <!-- Highlight.js for Code Syntax Highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 
     <style>
-        :root {
-            --bg-primary: #f0f4f8;
-            --bg-secondary: #ffffff;
-            --text-primary: #1a202c;
-            --text-secondary: #4a5568;
-            --accent: #4285f4;
-            --accent-hover: #3367d6;
-            --glass-bg: rgba(255, 255, 255, 0.65);
-            --glass-border: rgba(255, 255, 255, 0.5);
-            --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
-            --danger: #e53e3e;
-            --success: #38a169;
-        }
-
-        .dark {
-            --bg-primary: #0f172a;
-            --bg-secondary: #1e293b;
-            --text-primary: #f1f5f9;
-            --text-secondary: #94a3b8;
-            --accent: #60a5fa;
-            --accent-hover: #3b82f6;
-            --glass-bg: rgba(30, 41, 59, 0.7);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', sans-serif;
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
         body {
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            min-height: 100vh;
-            background-image: 
-                radial-gradient(at 0% 0%, rgba(66, 133, 244, 0.15) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
-            background-attachment: fixed;
+            font-family: 'Inter', sans-serif;
+            background-color: #212121;
+            color: #ececec;
         }
 
-        .glass {
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--glass-border);
-            box-shadow: var(--shadow);
+        .chat-container::-webkit-scrollbar { width: 6px; }
+        .chat-container::-webkit-scrollbar-track { background: transparent; }
+        .chat-container::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 10px; }
+        .chat-container::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
+
+        textarea::-webkit-scrollbar { display: none; }
+        textarea { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .prose p { margin-bottom: 1rem; line-height: 1.7; }
+        .prose p:last-child { margin-bottom: 0; }
+        .prose ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
+        .prose ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 1rem; }
+        .prose strong { color: #ffffff; font-weight: 600; }
+        .prose a { color: #3b82f6; text-decoration: underline; }
+        .prose code:not(pre code) {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 0.15rem 0.3rem;
+            border-radius: 0.375rem;
+            font-size: 0.85em;
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
+        .typing-indicator span {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background-color: #a3a3a3;
+            border-radius: 50%;
+            margin-right: 4px;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
         }
 
-        /* Header */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 2rem;
-            margin-bottom: 2rem;
-            border-radius: 1rem;
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
         }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--accent), #8b5cf6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .quota-badge {
-            font-size: 0.875rem;
-            padding: 0.5rem 1rem;
-            border-radius: 9999px;
-            background: rgba(66, 133, 244, 0.1);
-            color: var(--accent);
-            font-weight: 500;
-        }
-
-        /* Buttons */
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.75rem;
-            border: none;
-            font-weight: 600;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: all 0.2s;
-            font-size: 0.95rem;
-        }
-
-        .btn-primary {
-            background: var(--accent);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: var(--accent-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(66, 133, 244, 0.3);
-        }
-
-        .btn-secondary {
-            background: var(--glass-bg);
-            color: var(--text-primary);
-            border: 1px solid var(--glass-border);
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .btn-danger {
-            background: rgba(229, 62, 62, 0.1);
-            color: var(--danger);
-        }
-
-        .btn-danger:hover {
-            background: rgba(229, 62, 62, 0.2);
-        }
-
-        .btn-icon {
-            padding: 0.5rem;
-            border-radius: 0.5rem;
-        }
-
-        /* Auth View */
-        #auth-view {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 80vh;
-            text-align: center;
-        }
-
-        .auth-card {
-            padding: 3rem;
-            border-radius: 1.5rem;
-            max-width: 400px;
-            width: 100%;
-        }
-
-        /* Drop Zone */
-        .drop-zone {
-            border: 2px dashed var(--accent);
-            border-radius: 1.5rem;
-            padding: 3rem;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-bottom: 2rem;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .drop-zone.drag-over {
-            background: rgba(66, 133, 244, 0.1);
-            transform: scale(1.02);
-        }
-
-        .drop-zone input[type="file"] {
-            position: absolute;
-            inset: 0;
-            opacity: 0;
-            cursor: pointer;
-        }
-
-        /* Progress */
-        .progress-container {
-            margin-bottom: 2rem;
-        }
-
-        .progress-item {
-            padding: 1rem;
-            border-radius: 0.75rem;
-            margin-bottom: 0.75rem;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .progress-bar {
-            flex: 1;
-            height: 8px;
-            background: rgba(0,0,0,0.1);
-            border-radius: 9999px;
-            overflow: hidden;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: var(--accent);
-            border-radius: 9999px;
-            transition: width 0.3s ease;
-        }
-
-        /* Search */
-        .search-bar {
-            width: 100%;
-            padding: 1rem 1.5rem;
-            border-radius: 1rem;
-            border: 1px solid var(--glass-border);
-            background: var(--glass-bg);
-            color: var(--text-primary);
-            font-size: 1rem;
-            margin-bottom: 1.5rem;
-            outline: none;
-        }
-
-        .search-bar:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.1);
-        }
-
-        /* File Grid */
-        .file-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .file-card {
-            padding: 1.5rem;
-            border-radius: 1rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            animation: slideIn 0.3s ease;
-        }
-
-        @keyframes slideIn {
+        @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .file-header {
-            display: flex;
-            align-items: start;
-            gap: 1rem;
-        }
+        /* Sidebar transitions */
+        #sidebar { transition: width 0.3s ease, padding 0.3s ease, opacity 0.3s ease; }
+        .sidebar-closed { width: 0 !important; padding-left: 0 !important; padding-right: 0 !important; opacity: 0; overflow: hidden; }
 
-        .file-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 0.75rem;
-            background: rgba(66, 133, 244, 0.1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            flex-shrink: 0;
-        }
-
-        .file-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .file-name {
-            font-weight: 600;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            margin-bottom: 0.25rem;
-        }
-
-        .file-meta {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-        }
-
-        .file-actions {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-            margin-top: auto;
-        }
-
-        .file-actions .btn {
-            flex: 1;
-            justify-content: center;
-            padding: 0.5rem;
-            font-size: 0.875rem;
-        }
-
-        /* Modals */
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(4px);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            padding: 2rem;
-        }
-
-        .modal-overlay.active {
-            display: flex;
-        }
-
-        .modal {
-            background: var(--bg-secondary);
-            border-radius: 1.5rem;
-            max-width: 600px;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-            padding: 2rem;
-            position: relative;
-            animation: modalIn 0.3s ease;
-        }
-
-        @keyframes modalIn {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
-        }
-
-        .modal-close {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: var(--text-secondary);
-        }
-
-        .preview-content {
-            margin-top: 1rem;
-            border-radius: 0.75rem;
-            overflow: hidden;
-            background: #000;
-        }
-
-        .preview-content img, .preview-content video {
-            width: 100%;
-            max-height: 60vh;
-            object-fit: contain;
-        }
-
-        .preview-content iframe {
-            width: 100%;
-            height: 60vh;
-            border: none;
-        }
-
-        .qr-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1rem;
-            padding: 2rem;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        /* Utilities */
-        .text-center { text-align: center; }
-        .mb-4 { margin-bottom: 1rem; }
-        .mt-4 { margin-top: 1rem; }
-        .flex { display: flex; }
-        .gap-2 { gap: 0.5rem; }
-        .justify-between { justify-content: space-between; }
-        .items-center { align-items: center; }
-
+        /* Canvas transitions */
+        #canvas-panel { transition: width 0.3s ease; }
+        .canvas-open { width: 50% !important; border-left: 1px solid rgba(255,255,255,0.1); }
         @media (max-width: 768px) {
-            .container { padding: 1rem; }
-            .header { flex-direction: column; gap: 1rem; text-align: center; }
-            .file-grid { grid-template-columns: 1fr; }
+            .canvas-open { width: 100% !important; position: absolute; right: 0; top: 0; height: 100%; z-index: 50; }
         }
     </style>
 </head>
-<body>
 
-    <!-- CONFIGURATION SECTION -->
-    <script>
-        // =========================================================================
-        // SECURITY CONFIGURATION
-        // =========================================================================
-        // NOTE: Client Secret is intentionally OMITTED from this browser application.
-        // Browser applications must NEVER contain or use Client Secrets. 
-        // Google Identity Services (GIS) uses PKCE/Implicit flow which only requires CLIENT_ID.
-        // The Client ID below is obfuscated to prevent casual scraping.
-        // =========================================================================
-        const _0x5f2a = (function() {
-            // Base64 encoded Client ID: 395729354499-6a33nn8io2oj7ltosnuofsfj6kikqjfu.apps.googleusercontent.com
-            const _key = "Mzk1NzI5MzU0NDk5LTZhMzNubjhpbzJvajdsdG9zbnVvZnNmajZraWtxamZ1LmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29t";
-            return {
-                get clientId() { return atob(_key); }
-            };
-        })();
+<body class="h-screen w-full flex overflow-hidden selection:bg-gray-700 selection:text-white text-gray-200">
 
-        const CONFIG = {
-            CLIENT_ID: _0x5f2a.clientId,
-            API_KEY: "",
-            SCOPES: "https://www.googleapis.com/auth/drive.file"
-        };
-    </script>
+    <!-- Sidebar -->
+    <aside id="sidebar" class="w-[260px] bg-[#171717] flex flex-col h-full z-20 shrink-0 border-r border-white/10 hidden md:flex">
+        <div class="p-3 flex items-center justify-between">
+            <button onclick="location.reload()" class="flex-1 flex items-center gap-2 p-2 rounded-lg hover:bg-[#212121] transition-colors text-sm font-medium text-gray-200 group">
+                <div class="w-7 h-7 rounded-full bg-transparent flex items-center justify-center group-hover:bg-white group-hover:text-black transition-colors">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg" alt="AI" class="w-5 h-5 invert group-hover:invert-0 transition-all">
+                </div>
+                <span>New chat</span>
+                <i class="ph ph-note-pencil text-lg ml-auto text-gray-400"></i>
+            </button>
+            <button onclick="toggleSidebar()" class="p-2 ml-1 text-gray-400 hover:text-white rounded-lg hover:bg-[#212121] transition-colors" title="Close sidebar">
+                <i class="ph ph-sidebar-simple text-xl"></i>
+            </button>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto p-3 text-sm">
+            <div class="px-2 pb-2 text-xs font-semibold text-gray-500">Today</div>
+            <div class="p-2 rounded-lg bg-[#212121] text-gray-200 cursor-pointer truncate">
+                Krishna AI Setup
+            </div>
+        </div>
+        
+        <div class="p-3 border-t border-white/10">
+            <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-[#212121] cursor-pointer transition-colors">
+                <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white text-sm shrink-0">
+                    K
+                </div>
+                <div class="text-sm font-medium text-gray-200 truncate">Krishna</div>
+            </div>
+        </div>
+    </aside>
 
-    <div class="container">
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col h-full relative w-full bg-[#212121] min-w-0">
+        
         <!-- Header -->
-        <header class="header glass" id="app-header" style="display: none;">
-            <div class="logo">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="17 8 12 3 7 8"></polyline>
-                    <line x1="12" y1="3" x2="12" y2="15"></line>
-                </svg>
-                Krishu Share
-            </div>
-            <div class="header-actions">
-                <div class="quota-badge" id="quota-display">Loading quota...</div>
-                <button class="btn btn-secondary btn-icon" onclick="toggleTheme()" title="Toggle Theme">
-                    <span id="theme-icon">🌙</span>
+        <header class="flex items-center justify-between p-3 text-gray-200 z-10 w-full absolute top-0 left-0 bg-gradient-to-b from-[#212121] to-transparent">
+            <div class="flex items-center gap-2">
+                <button id="mobileSidebarToggle" onclick="toggleSidebar()" class="p-2 text-gray-400 hover:text-white rounded-md flex md:hidden">
+                    <i class="ph ph-list text-2xl"></i>
                 </button>
-                <button class="btn btn-secondary" onclick="signOut()">Sign Out</button>
+                <button id="openSidebarBtn" onclick="toggleSidebar()" class="p-2 text-gray-400 hover:text-white rounded-md hidden hover:bg-[#2f2f2f] transition-colors" title="Open sidebar">
+                    <i class="ph ph-sidebar-simple text-xl"></i>
+                </button>
+                <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-[#2f2f2f] cursor-pointer transition-colors font-medium text-lg text-gray-200">
+                    Krishna AI 
+                    <span class="text-gray-500 text-sm ml-1">gemma2:2b</span>
+                    <i class="ph-bold ph-caret-down text-sm text-gray-400"></i>
+                </div>
             </div>
+            <button onclick="location.reload()" class="p-2 text-gray-400 hover:text-white rounded-md md:hidden">
+                <i class="ph ph-note-pencil text-xl"></i>
+            </button>
         </header>
 
-        <!-- Auth View -->
-        <div id="auth-view">
-            <div class="auth-card glass">
-                <div class="logo justify-center mb-4" style="font-size: 2rem; justify-content: center;">
-                    Krishu Share
+        <!-- Chat Container -->
+        <div id="chat" class="chat-container flex-1 overflow-y-auto w-full pb-40 pt-16 scroll-smooth flex flex-col items-center">
+            
+            <div id="welcome-screen" class="flex-1 flex flex-col items-center justify-center px-4 w-full max-w-3xl fade-in mt-10 md:mt-0">
+                <div class="w-16 h-16 rounded-full bg-white flex items-center justify-center mb-6 shadow-lg shadow-black/20">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg" alt="Krishna AI" class="w-10 h-10">
                 </div>
-                <p class="text-secondary mb-4">Secure, premium cloud file sharing powered by Google Drive.</p>
-                <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="handleAuthClick()">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                    </svg>
-                    Sign in with Google
+                <h1 class="text-2xl md:text-3xl font-semibold text-white mb-8 text-center tracking-tight">How can I help you today?</h1>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
+                    <button onclick="setInputAndSend('Who created you?')" class="p-4 rounded-xl border border-white/10 text-left hover:bg-[#2f2f2f] transition-colors group">
+                        <div class="font-medium text-sm text-gray-200">Who created you?</div>
+                        <div class="text-sm text-gray-500 group-hover:text-gray-400 mt-1">Ask about my developer</div>
+                    </button>
+                    <button onclick="setInputAndSend('Tell me about Krishna.')" class="p-4 rounded-xl border border-white/10 text-left hover:bg-[#2f2f2f] transition-colors group">
+                        <div class="font-medium text-sm text-gray-200">Tell me about Krishna</div>
+                        <div class="text-sm text-gray-500 group-hover:text-gray-400 mt-1">Learn about BCA 1st Year student</div>
+                    </button>
+                    <button onclick="setInputAndSend('Write a Python script for a calculator.')" class="p-4 rounded-xl border border-white/10 text-left hover:bg-[#2f2f2f] transition-colors group hidden md:block">
+                        <div class="font-medium text-sm text-gray-200">Code a Calculator</div>
+                        <div class="text-sm text-gray-500 group-hover:text-gray-400 mt-1">In Python</div>
+                    </button>
+                    <button onclick="setInputAndSend('What are some good habits for programmers?')" class="p-4 rounded-xl border border-white/10 text-left hover:bg-[#2f2f2f] transition-colors group hidden md:block">
+                        <div class="font-medium text-sm text-gray-200">Good habits for programmers</div>
+                        <div class="text-sm text-gray-500 group-hover:text-gray-400 mt-1">Tips and tricks</div>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Input Area -->
+        <div class="absolute bottom-0 w-full bg-gradient-to-t from-[#212121] via-[#212121] to-transparent pt-6 pb-4 z-10">
+            <div class="max-w-3xl mx-auto px-4 w-full">
+                <div class="relative flex items-end w-full p-2 bg-[#2f2f2f] rounded-3xl focus-within:bg-[#333] transition-colors shadow-lg shadow-black/10">
+                    
+                    <button class="p-2.5 text-gray-400 hover:text-white rounded-full transition-colors mb-0.5">
+                        <i class="ph ph-paperclip text-xl"></i>
+                    </button>
+                    
+                    <textarea 
+                        id="message" 
+                        rows="1" 
+                        class="w-full max-h-48 py-3 px-2 bg-transparent text-white resize-none outline-none focus:ring-0 placeholder-gray-400 m-0 text-[15px] leading-relaxed" 
+                        placeholder="Message Krishna AI..."
+                    ></textarea>
+                    
+                    <button 
+                        id="sendBtn" 
+                        onclick="sendMessage()" 
+                        class="p-2 mb-1 mr-1 w-9 h-9 flex items-center justify-center rounded-full bg-[#444] text-gray-500 transition-colors shrink-0"
+                        disabled
+                    >
+                        <i class="ph-bold ph-arrow-up text-lg"></i>
+                    </button>
+                </div>
+                
+                <div class="text-center text-xs text-gray-400 mt-3">
+                    Krishna AI can make mistakes. Consider verifying important information.
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Canvas Panel -->
+    <aside id="canvas-panel" class="w-0 bg-[#1e1e1e] flex flex-col h-full z-30 shrink-0 overflow-hidden shadow-2xl">
+        <div class="flex items-center justify-between p-3 border-b border-white/10 bg-[#212121]">
+            <div class="flex items-center gap-2">
+                <i class="ph-bold ph-columns text-lg text-gray-400"></i>
+                <span class="font-medium text-sm text-gray-200">Canvas UI</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="flex bg-[#2f2f2f] rounded-lg p-0.5">
+                    <button id="btn-code-view" onclick="switchCanvasTab('code')" class="px-3 py-1 text-xs font-medium rounded-md bg-[#444] text-white transition-colors">Code</button>
+                    <button id="btn-preview-view" onclick="switchCanvasTab('preview')" class="px-3 py-1 text-xs font-medium rounded-md text-gray-400 hover:text-white transition-colors">Preview</button>
+                </div>
+                <button onclick="closeCanvas()" class="p-1.5 ml-2 text-gray-400 hover:text-white hover:bg-[#2f2f2f] rounded-lg transition-colors">
+                    <i class="ph ph-x text-lg"></i>
                 </button>
             </div>
         </div>
-
-        <!-- App View -->
-        <div id="app-view" class="hidden">
-            <!-- Drop Zone -->
-            <div class="drop-zone glass" id="drop-zone">
-                <input type="file" id="file-input" multiple onchange="handleFiles(this.files)">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" style="margin: 0 auto 1rem;">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="17 8 12 3 7 8"></polyline>
-                    <line x1="12" y1="3" x2="12" y2="15"></line>
-                </svg>
-                <h3 class="mb-4">Drag & Drop files here</h3>
-                <p class="text-secondary">or click to browse</p>
+        <div class="flex-1 relative w-full h-full bg-[#1e1e1e]">
+            <!-- Code Editor View -->
+            <div id="canvas-code-container" class="absolute inset-0 w-full h-full flex flex-col">
+                <textarea id="canvas-editor" class="flex-1 w-full p-4 bg-transparent text-gray-300 font-mono text-[13px] leading-relaxed resize-none outline-none whitespace-pre border-none focus:ring-0" spellcheck="false" oninput="updatePreviewFromEditor()"></textarea>
             </div>
-
-            <!-- Progress Container -->
-            <div class="progress-container" id="progress-container"></div>
-
-            <!-- Search -->
-            <input type="text" class="search-bar" id="search-input" placeholder="Search files..." oninput="filterFiles(this.value)">
-
-            <!-- History Grid -->
-            <div class="file-grid" id="file-grid"></div>
-        </div>
-    </div>
-
-    <!-- Preview Modal -->
-    <div class="modal-overlay" id="preview-modal" onclick="closeModal('preview-modal')">
-        <div class="modal" onclick="event.stopPropagation()">
-            <button class="modal-close" onclick="closeModal('preview-modal')">&times;</button>
-            <h3 id="preview-title" class="mb-4">Preview</h3>
-            <div class="preview-content" id="preview-content"></div>
-        </div>
-    </div>
-
-    <!-- QR Modal -->
-    <div class="modal-overlay" id="qr-modal" onclick="closeModal('qr-modal')">
-        <div class="modal" onclick="event.stopPropagation()">
-            <button class="modal-close" onclick="closeModal('qr-modal')">&times;</button>
-            <h3 class="text-center mb-4">Scan to Share</h3>
-            <div class="qr-container">
-                <div id="qrcode"></div>
-                <p class="text-secondary text-center" id="qr-link" style="word-break: break-all;"></p>
-                <button class="btn btn-primary" onclick="copyToClipboard(document.getElementById('qr-link').textContent)">Copy Link</button>
+            <!-- Preview View -->
+            <div id="canvas-preview-container" class="absolute inset-0 w-full h-full hidden bg-white">
+                <iframe id="canvas-iframe" class="w-full h-full border-none"></iframe>
             </div>
         </div>
-    </div>
+    </aside>
 
     <script>
-        // State
-        let accessToken = null;
-        let tokenClient = null;
-        let fileHistory = JSON.parse(localStorage.getItem('krishu_share_history') || '[]');
+        const API_BASE_URL = "https://snuggle-monkhood-venture.ngrok-free.dev"; 
 
-        // Initialize GIS
-        function initGis() {
-            tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: CONFIG.CLIENT_ID,
-                scope: CONFIG.SCOPES,
-                callback: (response) => {
-                    if (response.error !== undefined) {
-                        console.error(response);
-                        alert('Authentication failed');
-                        return;
-                    }
-                    accessToken = response.access_token;
-                    document.getElementById('auth-view').classList.add('hidden');
-                    document.getElementById('app-view').classList.remove('hidden');
-                    document.getElementById('app-header').style.display = 'flex';
-                    loadQuota();
-                    renderHistory();
-                },
-            });
-        }
+        const chat = document.getElementById("chat");
+        const input = document.getElementById("message");
+        const sendBtn = document.getElementById("sendBtn");
+        const welcomeScreen = document.getElementById("welcome-screen");
+        const sidebar = document.getElementById("sidebar");
+        const openSidebarBtn = document.getElementById("openSidebarBtn");
 
-        function handleAuthClick() {
-            if (accessToken) {
-                google.accounts.oauth2.revoke(accessToken, () => {
-                    accessToken = null;
-                    location.reload();
-                });
-            } else {
-                tokenClient.requestAccessToken();
-            }
-        }
+        const canvasPanel = document.getElementById("canvas-panel");
+        const canvasEditor = document.getElementById("canvas-editor");
+        const canvasIframe = document.getElementById("canvas-iframe");
+        const btnCodeView = document.getElementById("btn-code-view");
+        const btnPreviewView = document.getElementById("btn-preview-view");
+        const canvasCodeContainer = document.getElementById("canvas-code-container");
+        const canvasPreviewContainer = document.getElementById("canvas-preview-container");
 
-        function signOut() {
-            if (accessToken) {
-                google.accounts.oauth2.revoke(accessToken, () => {
-                    accessToken = null;
-                    location.reload();
-                });
-            }
-        }
+        let generatedCodeBlocks = {};
+        let codeBlockCounter = 0;
 
-        // Theme Toggle
-        function toggleTheme() {
-            const html = document.documentElement;
-            const isDark = html.classList.toggle('dark');
-            document.getElementById('theme-icon').textContent = isDark ? '☀️' : '🌙';
-            localStorage.setItem('krishu_theme', isDark ? 'dark' : 'light');
-        }
-
-        // Initialize theme
-        if (localStorage.getItem('krishu_theme') === 'dark' || (!localStorage.getItem('krishu_theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-            document.getElementById('theme-icon').textContent = '☀️';
-        }
-
-        // Drag and Drop
-        const dropZone = document.getElementById('drop-zone');
-        
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, preventDefaults, false);
-        });
-
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropZone.addEventListener(eventName, () => dropZone.classList.add('drag-over'), false);
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, () => dropZone.classList.remove('drag-over'), false);
-        });
-
-        dropZone.addEventListener('drop', (e) => {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-            handleFiles(files);
-        });
-
-        // File Handling
-        async function handleFiles(files) {
-            for (const file of files) {
-                await uploadFile(file);
-            }
-        }
-
-        async function uploadFile(file) {
-            const progressId = 'prog-' + Date.now() + Math.random();
-            createProgressItem(progressId, file.name, 0);
-
-            try {
-                const metadata = {
-                    name: file.name,
-                    mimeType: file.type || 'application/octet-stream'
-                };
-
-                // Step 1: Initiate resumable upload
-                const initRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`,
-                        'Content-Type': 'application/json; charset=UTF-8'
-                    },
-                    body: JSON.stringify(metadata)
-                });
-
-                if (!initRes.ok) throw new Error('Failed to initiate upload');
-                const sessionUrl = initRes.headers.get('Location');
-
-                // Step 2: Upload file with progress
-                const fileInfo = await new Promise((resolve, reject) => {
-                    const xhr = new XMLHttpRequest();
-                    xhr.open('PUT', sessionUrl, true);
-                    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
-                    
-                    xhr.upload.onprogress = (event) => {
-                        if (event.lengthComputable) {
-                            const percent = (event.loaded / event.total) * 100;
-                            updateProgress(progressId, percent);
-                        }
-                    };
-                    
-                    xhr.onload = () => {
-                        if (xhr.status >= 200 && xhr.status < 300) {
-                            resolve(JSON.parse(xhr.responseText));
-                        } else {
-                            reject(new Error(xhr.responseText));
-                        }
-                    };
-                    
-                    xhr.onerror = () => reject(new Error('Network error'));
-                    xhr.send(file);
-                });
-
-                // Step 3: Make public
-                await makePublic(fileInfo.id);
-
-                // Step 4: Save to history
-                const fileRecord = {
-                    id: fileInfo.id,
-                    name: fileInfo.name,
-                    mimeType: fileInfo.mimeType,
-                    size: file.size,
-                    uploadDate: new Date().toISOString()
-                };
-                
-                fileHistory.unshift(fileRecord);
-                localStorage.setItem('krishu_share_history', JSON.stringify(fileHistory));
-                
-                removeProgressItem(progressId);
-                renderHistory();
-                loadQuota(); // Update quota after upload
-
-            } catch (error) {
-                console.error(error);
-                updateProgress(progressId, 0, 'Error: ' + error.message);
-            }
-        }
-
-        async function makePublic(fileId) {
-            const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    role: 'reader',
-                    type: 'anyone'
-                })
-            });
-            if (!res.ok) throw new Error('Failed to make file public');
-            return res.json();
-        }
-
-        // Progress UI
-        function createProgressItem(id, name, percent) {
-            const container = document.getElementById('progress-container');
-            const div = document.createElement('div');
-            div.className = 'progress-item glass';
-            div.id = id;
-            div.innerHTML = `
-                <div style="flex: 1;">
-                    <div style="font-weight: 500; margin-bottom: 0.5rem;">${name}</div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: ${percent}%"></div>
-                    </div>
-                    <div style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.25rem;" class="status-text">Uploading... ${percent.toFixed(0)}%</div>
-                </div>
-            `;
-            container.appendChild(div);
-        }
-
-        function updateProgress(id, percent, status = null) {
-            const item = document.getElementById(id);
-            if (!item) return;
-            item.querySelector('.progress-fill').style.width = percent + '%';
-            if (status) {
-                item.querySelector('.status-text').textContent = status;
-                item.querySelector('.status-text').style.color = 'var(--danger)';
-            } else {
-                item.querySelector('.status-text').textContent = `Uploading... ${percent.toFixed(0)}%`;
-            }
-        }
-
-        function removeProgressItem(id) {
-            const item = document.getElementById(id);
-            if (item) {
-                item.style.opacity = '0';
-                setTimeout(() => item.remove(), 300);
-            }
-        }
-
-        // History & Rendering
-        function renderHistory(filter = '') {
-            const grid = document.getElementById('file-grid');
-            grid.innerHTML = '';
+        // Custom Renderer for Marked.js (Adds ChatGPT style code blocks with Copy button)
+        const renderer = new marked.Renderer();
+        renderer.code = function(code, language) {
+            const validLanguage = hljs.getLanguage(language) ? language : 'plaintext';
+            const highlighted = hljs.highlight(code, { language: validLanguage }).value;
             
-            const filtered = fileHistory.filter(f => f.name.toLowerCase().includes(filter.toLowerCase()));
+            const escapedCode = code.replace(/`/g, '\\`').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             
-            filtered.forEach(file => {
-                const card = document.createElement('div');
-                card.className = 'file-card glass';
-                
-                const icon = getFileIcon(file.mimeType);
-                const date = new Date(file.uploadDate).toLocaleDateString();
-                const size = formatBytes(file.size);
-                
-                const shareLink = `https://drive.google.com/file/d/${file.id}/view?usp=sharing`;
-                const downloadLink = `https://drive.google.com/uc?export=download&id=${file.id}`;
-                const previewLink = `https://drive.google.com/file/d/${file.id}/preview`;
-                
-                card.innerHTML = `
-                    <div class="file-header">
-                        <div class="file-icon">${icon}</div>
-                        <div class="file-info">
-                            <div class="file-name" title="${file.name}">${file.name}</div>
-                            <div class="file-meta">${date} • ${size}</div>
+            codeBlockCounter++;
+            const blockId = 'code_block_' + codeBlockCounter;
+            generatedCodeBlocks[blockId] = { code: code, language: language };
+            
+            return `
+                <div class="rounded-xl my-4 overflow-hidden bg-[#0d0d0d] border border-white/10 font-sans">
+                    <div class="flex items-center justify-between px-4 py-2 bg-[#2f2f2f] text-xs text-gray-300">
+                        <span class="lowercase font-mono">${language || 'code'}</span>
+                        <div class="flex items-center gap-3">
+                            <button class="flex items-center gap-1.5 hover:text-white transition-colors text-indigo-400 hover:text-indigo-300" onclick="openCanvas('${blockId}')">
+                                <i class="ph ph-columns text-sm"></i> <span>Open Canvas</span>
+                            </button>
+                            <button class="flex items-center gap-1.5 hover:text-white transition-colors" onclick="copyCode(this, \`${escapedCode}\`)">
+                                <i class="ph ph-copy text-sm"></i> <span>Copy code</span>
+                            </button>
                         </div>
                     </div>
-                    <div class="file-actions">
-                        <button class="btn btn-secondary" onclick="openPreview('${file.id}', '${file.name}', '${file.mimeType}')">Open</button>
-                        <button class="btn btn-secondary" onclick="copyToClipboard('${shareLink}')">Copy</button>
-                        <button class="btn btn-primary" onclick="window.open('${downloadLink}', '_blank')">Download</button>
-                        <button class="btn btn-secondary" onclick="showQR('${shareLink}')">QR</button>
-                        <button class="btn btn-secondary" onclick="shareFile('${file.name}', '${shareLink}')">Share</button>
-                        <button class="btn btn-danger" onclick="deleteFile('${file.id}', this)">Delete</button>
+                    <div class="p-4 overflow-x-auto text-[0.9em]">
+                        <pre><code class="hljs ${validLanguage} bg-transparent p-0 m-0 leading-relaxed font-mono">${highlighted}</code></pre>
+                    </div>
+                </div>
+            `;
+        };
+        marked.use({ renderer, breaks: true });
+
+        // Canvas Functions
+        function openCanvas(blockId) {
+            const block = generatedCodeBlocks[blockId];
+            if (!block) return;
+            
+            canvasEditor.value = block.code;
+            canvasPanel.classList.add("canvas-open");
+            
+            // Auto switch to preview if it's HTML
+            let isWebCode = ['html', 'javascript', 'css', 'js', 'xml'].includes(block.language?.toLowerCase());
+            if (isWebCode || block.code.includes('<html') || block.code.includes('<div')) {
+                switchCanvasTab('preview');
+            } else {
+                switchCanvasTab('code');
+            }
+        }
+
+        function closeCanvas() {
+            canvasPanel.classList.remove("canvas-open");
+        }
+
+        function switchCanvasTab(tab) {
+            if (tab === 'code') {
+                btnCodeView.classList.replace("text-gray-400", "text-white");
+                btnCodeView.classList.replace("hover:text-white", "bg-[#444]");
+                btnPreviewView.classList.replace("text-white", "text-gray-400");
+                btnPreviewView.classList.replace("bg-[#444]", "hover:text-white");
+                
+                canvasCodeContainer.classList.remove("hidden");
+                canvasPreviewContainer.classList.add("hidden");
+            } else {
+                btnPreviewView.classList.replace("text-gray-400", "text-white");
+                btnPreviewView.classList.replace("hover:text-white", "bg-[#444]");
+                btnCodeView.classList.replace("text-white", "text-gray-400");
+                btnCodeView.classList.replace("bg-[#444]", "hover:text-white");
+                
+                canvasCodeContainer.classList.add("hidden");
+                canvasPreviewContainer.classList.remove("hidden");
+                
+                updatePreviewFromEditor();
+            }
+        }
+        
+        function updatePreviewFromEditor() {
+            const code = canvasEditor.value;
+            const doc = canvasIframe.contentWindow.document;
+            doc.open();
+            doc.write(code);
+            doc.close();
+        }
+
+        // Copy Code Function
+        function copyCode(btn, code) {
+            navigator.clipboard.writeText(code).then(() => {
+                const originalText = btn.innerHTML;
+                btn.innerHTML = `<i class="ph ph-check text-sm text-green-400"></i> <span class="text-green-400">Copied!</span>`;
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                }, 2000);
+            });
+        }
+
+        // Sidebar Toggle
+        function toggleSidebar() {
+            sidebar.classList.toggle("sidebar-closed");
+            if (sidebar.classList.contains("sidebar-closed")) {
+                openSidebarBtn.classList.remove("hidden");
+                openSidebarBtn.classList.add("flex");
+            } else {
+                openSidebarBtn.classList.add("hidden");
+                openSidebarBtn.classList.remove("flex");
+            }
+        }
+
+        // =========================================================================
+        // SYSTEM PROMPT: Strictly defining the Creator (Krishna, BCA 1st Year)
+        // =========================================================================
+        let conversation = [
+            {
+                role: "system",
+                content: "Your name is Krishna AI. You are a highly intelligent, helpful, and polite assistant. IMPORTANT INSTRUCTION: You were exclusively created by a talented developer named 'Krishna'. If anyone asks questions like 'who created you', 'tumhe kisne banaya', 'who is your developer', or 'who is your owner', you MUST proudly reply that 'Mujhe Krishna ne banaya hai' (I was created by Krishna). Furthermore, if anyone asks who Krishna is or wants to know about your creator, you MUST tell them that Krishna is a brilliant BCA (Bachelor of Computer Applications) 1st-year student. Never mention OpenAI, Google, Anthropic or any other company as your creator. Always speak naturally and respectfully."
+            }
+        ];
+        
+        let isSending = false;
+
+        function setInputAndSend(text) {
+            input.value = text;
+            input.dispatchEvent(new Event('input')); 
+            sendMessage();
+        }
+
+        // Auto-resize textarea and button state
+        input.addEventListener("input", function() {
+            this.style.height = "auto";
+            this.style.height = (this.scrollHeight) + "px";
+            if (this.style.height > "192px") this.style.overflowY = "auto";
+            else this.style.overflowY = "hidden";
+            
+            if(this.value.trim().length > 0 && !isSending) {
+                sendBtn.disabled = false;
+                sendBtn.classList.add("bg-white", "text-black");
+                sendBtn.classList.remove("bg-[#444]", "text-gray-500");
+            } else {
+                sendBtn.disabled = true;
+                sendBtn.classList.remove("bg-white", "text-black");
+                sendBtn.classList.add("bg-[#444]", "text-gray-500");
+            }
+        });
+
+        input.addEventListener("keydown", function(e) {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
+
+        function addMessageToUI(text, role, isMarkdown = false) {
+            if (welcomeScreen && welcomeScreen.style.display !== 'none') {
+                welcomeScreen.style.display = 'none';
+            }
+
+            const isUser = role === "user";
+            const div = document.createElement("div");
+            div.className = "w-full flex justify-center py-5 px-4 fade-in";
+            
+            let contentHTML = isMarkdown ? marked.parse(text) : escapeHTML(text);
+
+            if (isUser) {
+                div.innerHTML = `
+                    <div class="max-w-3xl w-full flex justify-end">
+                        <div class="bg-[#2f2f2f] text-gray-100 px-5 py-3 rounded-3xl max-w-[75%] break-words text-[15.5px] leading-relaxed shadow-sm">
+                            ${contentHTML.replace(/\n/g, '<br>')}
+                        </div>
                     </div>
                 `;
-                grid.appendChild(card);
-            });
-        }
-
-        function getFileIcon(mimeType) {
-            if (mimeType.startsWith('image/')) return '🖼️';
-            if (mimeType.startsWith('video/')) return '🎬';
-            if (mimeType === 'application/pdf') return '📄';
-            if (mimeType.includes('word') || mimeType.includes('document')) return '📝';
-            if (mimeType.includes('sheet') || mimeType.includes('excel')) return '📊';
-            return '📁';
-        }
-
-        function formatBytes(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
-        function filterFiles(query) {
-            renderHistory(query);
-        }
-
-        // File Operations
-        async function deleteFile(fileId, btnElement) {
-            if (!confirm('Are you sure you want to delete this file from Google Drive?')) return;
-            
-            btnElement.disabled = true;
-            btnElement.textContent = 'Deleting...';
-            
-            try {
-                const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`
-                    }
-                });
-                
-                if (res.ok) {
-                    fileHistory = fileHistory.filter(f => f.id !== fileId);
-                    localStorage.setItem('krishu_share_history', JSON.stringify(fileHistory));
-                    renderHistory(document.getElementById('search-input').value);
-                    loadQuota();
-                } else {
-                    throw new Error('Delete failed');
-                }
-            } catch (error) {
-                alert('Failed to delete file');
-                btnElement.disabled = false;
-                btnElement.textContent = 'Delete';
-            }
-        }
-
-        async function renameFile(fileId, currentName) {
-            const newName = prompt('Enter new file name:', currentName);
-            if (!newName || newName === currentName) return;
-            
-            try {
-                const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ name: newName })
-                });
-                
-                if (res.ok) {
-                    const file = fileHistory.find(f => f.id === fileId);
-                    if (file) {
-                        file.name = newName;
-                        localStorage.setItem('krishu_share_history', JSON.stringify(fileHistory));
-                        renderHistory(document.getElementById('search-input').value);
-                    }
-                } else {
-                    throw new Error('Rename failed');
-                }
-            } catch (error) {
-                alert('Failed to rename file');
-            }
-        }
-
-        // Preview
-        function openPreview(fileId, fileName, mimeType) {
-            const modal = document.getElementById('preview-modal');
-            const title = document.getElementById('preview-title');
-            const content = document.getElementById('preview-content');
-            
-            title.textContent = fileName;
-            content.innerHTML = '';
-            
-            if (mimeType.startsWith('image/')) {
-                content.innerHTML = `<img src="https://drive.google.com/uc?export=view&id=${fileId}" alt="${fileName}">`;
-            } else if (mimeType.startsWith('video/')) {
-                content.innerHTML = `<video controls><source src="https://drive.google.com/uc?export=download&id=${fileId}" type="${mimeType}">Your browser does not support video.</video>`;
-            } else if (mimeType === 'application/pdf' || mimeType.includes('document') || mimeType.includes('sheet')) {
-                content.innerHTML = `<iframe src="https://drive.google.com/file/d/${fileId}/preview"></iframe>`;
             } else {
-                content.innerHTML = `<div style="padding: 3rem; text-align: center; color: white;">Preview not available for this file type.<br>Please download to view.</div>`;
+                div.innerHTML = `
+                    <div class="max-w-3xl w-full flex gap-4">
+                        <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center flex-shrink-0 mt-1 border border-white/10 shadow-sm">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg" alt="AI" class="w-5 h-5">
+                        </div>
+                        <div class="flex-1 prose prose-invert max-w-none text-gray-100 text-[15.5px] leading-relaxed min-w-0 font-sans">
+                            ${contentHTML}
+                        </div>
+                    </div>
+                `;
             }
-            
-            modal.classList.add('active');
+
+            chat.appendChild(div);
+            chat.scrollTop = chat.scrollHeight;
+            return div;
         }
 
-        // QR Code
-        function showQR(link) {
-            const modal = document.getElementById('qr-modal');
-            const container = document.getElementById('qrcode');
-            const linkText = document.getElementById('qr-link');
-            
-            container.innerHTML = '';
-            linkText.textContent = link;
-            
-            new QRCode(container, {
-                text: link,
-                width: 200,
-                height: 200,
-                colorDark: document.documentElement.classList.contains('dark') ? '#ffffff' : '#000000',
-                colorLight: 'transparent',
-                correctLevel: QRCode.CorrectLevel.H
-            });
-            
-            modal.classList.add('active');
+        function addLoadingIndicator() {
+            const div = document.createElement("div");
+            div.className = "w-full flex justify-center py-5 px-4 fade-in";
+            div.innerHTML = `
+                <div class="max-w-3xl w-full flex gap-4">
+                    <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center flex-shrink-0 mt-1 border border-white/10 shadow-sm">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg" alt="AI" class="w-5 h-5">
+                    </div>
+                    <div class="flex-1 mt-3 typing-indicator">
+                        <span></span><span></span><span></span>
+                    </div>
+                </div>
+            `;
+            chat.appendChild(div);
+            chat.scrollTop = chat.scrollHeight;
+            return div;
         }
 
-        // Utilities
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                alert('Link copied to clipboard!');
-            }).catch(() => {
-                // Fallback
-                const input = document.createElement('input');
-                input.value = text;
-                document.body.appendChild(input);
-                input.select();
-                document.execCommand('copy');
-                document.body.removeChild(input);
-                alert('Link copied to clipboard!');
-            });
-        }
+        async function sendMessage() {
+            const text = input.value.trim();
+            if (!text || isSending) return;
 
-        async function shareFile(name, url) {
-            if (navigator.share) {
-                try {
-                    await navigator.share({
-                        title: name,
-                        text: `Check out this file: ${name}`,
-                        url: url
-                    });
-                } catch (err) {
-                    console.log('Share canceled');
-                }
-            } else {
-                copyToClipboard(url);
-            }
-        }
+            isSending = true;
+            sendBtn.disabled = true;
+            input.disabled = true;
 
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.remove('active');
-        }
+            input.style.height = "48px"; 
+            input.value = "";
+            sendBtn.classList.remove("bg-white", "text-black");
+            sendBtn.classList.add("bg-[#444]", "text-gray-500");
 
-        // Quota
-        async function loadQuota() {
+            addMessageToUI(text, "user");
+            conversation.push({ role: "user", content: text });
+
+            const loadingElement = addLoadingIndicator();
+
             try {
-                const res = await fetch('https://www.googleapis.com/drive/v3/about?fields=storageQuota', {
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`
-                    }
+                const response = await fetch(API_BASE_URL + "/api/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        model: "gemma2:2b",
+                        messages: conversation
+                    })
                 });
-                const data = await res.json();
-                const quota = data.storageQuota;
-                const used = parseInt(quota.usage);
-                const limit = parseInt(quota.limit);
-                const remaining = limit - used;
-                
-                document.getElementById('quota-display').textContent = `${formatBytes(remaining)} available`;
+
+                const data = await response.json();
+                loadingElement.remove();
+
+                if (!response.ok) {
+                    addMessageToUI("⚠️ **Error:** " + (data.error || data.details || "API Error"), "ai", true);
+                    return;
+                }
+
+                const reply = data.reply || data.message?.content || "No response generated.";
+
+                conversation.push({ role: "assistant", content: reply });
+                addMessageToUI(reply, "ai", true);
+
             } catch (error) {
-                console.error('Failed to load quota', error);
+                loadingElement.remove();
+                addMessageToUI("🚨 **Connection Error:** Server se connect nahi ho pa raha hai. Ensure your Python server is running.\n\n`" + error.message + "`", "ai", true);
+            } finally {
+                isSending = false;
+                input.disabled = false;
+                input.focus();
             }
         }
-
-        // Initialize
-        window.onload = () => {
-            initGis();
-        };
     </script>
 </body>
 </html>
