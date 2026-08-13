@@ -3,184 +3,216 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KriSpark</title>
+    <title>KriSpark - AI Assistant</title>
     
-    <!-- Tailwind CSS for ChatGPT like styling -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Phosphor Icons -->
+    <!-- Phosphor Icons for Premium UI -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    
-    <!-- Marked.js for Markdown rendering -->
+    <!-- Marked.js for Code Blocks & Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+        
         body {
+            font-family: 'Inter', sans-serif;
             background-color: #212121;
             color: #ececec;
-            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
 
         /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #444; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #666; }
-
-        .chat-container {
-            scroll-behavior: smooth;
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #777;
         }
 
-        /* Markdown Styles */
+        /* Markdown Styling */
         .prose pre {
-            margin: 0 !important;
+            background-color: #1e1e1e !important;
             padding: 0 !important;
-            background-color: transparent !important;
-            border: none !important;
+            border-radius: 8px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            overflow: hidden;
         }
         .prose code {
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-            color: #e5e5e5;
-            background: #333;
-            padding: 3px 6px;
-            border-radius: 6px;
-            font-size: 0.85em;
+            font-family: monospace;
+            color: #e2e8f0;
         }
-        .prose pre code {
-            background: transparent;
-            padding: 0;
-            color: #e5e5e5;
+        .prose p { margin-bottom: 0.75rem; }
+        .prose p:last-child { margin-bottom: 0; }
+        
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #2f2f2f;
+            padding: 8px 12px;
+            font-size: 12px;
+            color: #b3b3b3;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
         }
-        .prose p { margin-bottom: 12px; line-height: 1.7; }
+        
+        .code-body {
+            padding: 16px;
+            overflow-x: auto;
+        }
 
-        /* Animation for new messages */
-        @keyframes messageFadeIn {
+        /* Typing Cursor */
+        .typing-cursor::after {
+            content: '▋';
+            animation: blink 1s step-start infinite;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* Toast Notification */
+        #toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            z-index: 50;
+        }
+        #toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* Fade In Animation */
+        .fade-in {
+            animation: fadeIn 0.4s ease forwards;
+        }
+        @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .animate-fade-in {
-            animation: messageFadeIn 0.3s ease-out forwards;
-        }
-
-        /* Typing indicator animation */
-        .typing-indicator span {
-            display: inline-block;
-            width: 6px;
-            height: 6px;
-            background-color: #888;
-            border-radius: 50%;
-            margin: 0 2px;
-            animation: bounce 1.4s infinite ease-in-out both;
-        }
-        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
-        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
-        @keyframes bounce {
-            0%, 80%, 100% { transform: scale(0); }
-            40% { transform: scale(1); }
-        }
     </style>
 </head>
-<body class="flex h-screen overflow-hidden">
+<body class="h-screen flex overflow-hidden">
 
     <!-- Sidebar -->
-    <aside class="w-[260px] bg-[#171717] flex-col h-full shrink-0 border-r border-white/10 hidden md:flex">
+    <div id="sidebar" class="w-64 bg-[#171717] flex-shrink-0 flex flex-col transition-all duration-300 transform -translate-x-full md:translate-x-0 absolute md:relative z-20 h-full border-r border-white/10 hidden md:flex">
         <div class="p-3">
-            <button onclick="clearChat()" class="w-full flex items-center gap-2 p-3 rounded-lg hover:bg-[#212121] transition-colors text-sm font-medium text-gray-200">
-                <i class="ph ph-plus text-lg"></i>
-                New chat
-                <i class="ph ph-note-pencil text-lg ml-auto text-gray-400"></i>
+            <button onclick="startNewChat()" class="w-full flex items-center justify-between p-3 rounded-lg hover:bg-[#2f2f2f] transition-colors group">
+                <div class="flex items-center gap-2 font-medium">
+                    <div class="bg-white text-black w-7 h-7 rounded-full flex items-center justify-center font-bold">K</div>
+                    New chat
+                </div>
+                <i class="ph ph-note-pencil text-xl text-gray-400 group-hover:text-white"></i>
             </button>
         </div>
-        
-        <div class="flex-1 overflow-y-auto p-3">
-            <div class="px-2 pb-2 text-xs font-semibold text-gray-500">History</div>
-            <div class="p-2 rounded-lg bg-[#212121] text-gray-200 text-sm cursor-pointer truncate">
-                KriSpark Conversation
-            </div>
+        <div class="flex-1 overflow-y-auto px-3 py-2 text-sm text-gray-400">
+            <p class="px-2 py-1 mb-2 text-xs font-semibold">Today</p>
+            <div class="p-2 hover:bg-[#2f2f2f] rounded-lg cursor-pointer truncate transition-colors">Conversation history will appear here...</div>
         </div>
-        
-        <div class="p-3 border-t border-white/10">
-            <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-[#212121] cursor-pointer transition-colors">
-                <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white text-sm shrink-0">
-                    U
-                </div>
-                <div class="text-sm font-medium text-gray-200 truncate">User</div>
-            </div>
+        <div class="p-3 border-t border-white/10 flex items-center gap-3 hover:bg-[#2f2f2f] m-2 rounded-lg cursor-pointer transition-colors">
+            <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 flex items-center justify-center font-bold text-white">U</div>
+            <div class="font-medium text-sm text-white">User</div>
         </div>
-    </aside>
+    </div>
 
     <!-- Main Chat Area -->
-    <main class="flex-1 flex flex-col relative h-full w-full bg-[#212121]">
-        
-        <!-- Header (Mobile visible, Desktop minimal) -->
-        <header class="flex items-center justify-between p-3 absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-[#212121] to-transparent">
-            <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium text-lg text-gray-200">
-                KriSpark 
-                <span class="text-gray-500 text-xs ml-1 border border-gray-600 rounded px-1">gemma2:2b</span>
-            </div>
-            <button onclick="clearChat()" class="p-2 text-gray-400 hover:text-white md:hidden">
-                <i class="ph ph-note-pencil text-xl"></i>
+    <div class="flex-1 flex flex-col relative bg-[#212121]">
+        <!-- Header (Mobile Toggle) -->
+        <div class="h-14 flex items-center justify-between px-4 border-b border-white/10 md:hidden bg-[#212121] z-10">
+            <button onclick="document.getElementById('sidebar').classList.toggle('hidden'); document.getElementById('sidebar').classList.toggle('translate-x-0')" class="text-gray-400 hover:text-white">
+                <i class="ph ph-list text-2xl"></i>
             </button>
-        </header>
+            <div class="font-medium">KriSpark</div>
+            <button onclick="startNewChat()" class="text-gray-400 hover:text-white">
+                <i class="ph ph-note-pencil text-2xl"></i>
+            </button>
+        </div>
 
         <!-- Chat Container -->
-        <div id="chat" class="chat-container flex-1 overflow-y-auto w-full pb-32 pt-16 flex flex-col items-center">
-            
+        <div id="chat-container" class="flex-1 overflow-y-auto pb-32">
             <!-- Welcome Screen -->
-            <div id="welcome-screen" class="flex-1 flex flex-col items-center justify-center px-4 w-full max-w-3xl transition-opacity duration-300">
-                <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center mb-6 shadow-xl shadow-purple-900/20">
-                    <span class="text-4xl font-bold text-white drop-shadow-md">K</span>
+            <div id="welcome-screen" class="h-full flex flex-col items-center justify-center px-4 fade-in">
+                <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-6 shadow-lg shadow-white/5">
+                    <i class="ph-fill ph-sparkle text-3xl text-black"></i>
                 </div>
-                <h1 class="text-3xl md:text-4xl font-semibold text-white mb-8 text-center tracking-tight">How can I help you today?</h1>
+                <h1 class="text-2xl md:text-3xl font-semibold mb-8 text-center">How can I help you today?</h1>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-2xl">
+                    <div onclick="document.getElementById('message').value='Write a python script for a calculator'; document.getElementById('sendBtn').disabled=false;" class="p-4 border border-white/10 rounded-xl hover:bg-[#2f2f2f] cursor-pointer transition-colors text-sm text-gray-300">
+                        <span class="font-medium text-white block mb-1">Code a calculator</span>
+                        in Python with basic operators
+                    </div>
+                    <div onclick="document.getElementById('message').value='Tell me a fun fact about space'; document.getElementById('sendBtn').disabled=false;" class="p-4 border border-white/10 rounded-xl hover:bg-[#2f2f2f] cursor-pointer transition-colors text-sm text-gray-300">
+                        <span class="font-medium text-white block mb-1">Space facts</span>
+                        Tell me something mind-blowing
+                    </div>
+                </div>
             </div>
 
+            <!-- Chat Messages -->
+            <div id="chat" class="max-w-3xl mx-auto w-full pt-6"></div>
         </div>
 
         <!-- Input Area -->
         <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#212121] via-[#212121] to-transparent pt-6 pb-6 px-4 md:px-0 flex justify-center">
             <div class="w-full max-w-3xl relative">
-                <div class="bg-[#2f2f2f] rounded-[26px] flex items-end p-2 shadow-xl border border-white/10 focus-within:border-white/20 focus-within:ring-2 focus-within:ring-white/10 transition-all duration-300">
+                <div class="bg-[#2f2f2f] rounded-3xl flex items-end p-2 border border-white/10 focus-within:border-white/30 focus-within:bg-[#333] transition-all duration-300">
                     
-                    <button class="p-2.5 text-gray-400 hover:text-gray-200 rounded-full transition-colors mb-0.5">
+                    <button class="p-2.5 text-gray-400 hover:text-gray-200 rounded-full transition-colors mb-0.5" title="Attach file">
                         <i class="ph ph-paperclip text-xl"></i>
+                    </button>
+                    
+                    <button id="webSearchBtn" onclick="toggleWebSearch()" class="p-2.5 text-gray-400 hover:text-gray-200 rounded-full transition-colors mb-0.5" title="Toggle Web Search">
+                        <i id="webSearchIcon" class="ph ph-globe text-xl"></i>
                     </button>
                     
                     <textarea 
                         id="message" 
-                        class="flex-1 bg-transparent border-none outline-none text-white resize-none max-h-48 py-3 px-2 focus:ring-0 leading-relaxed text-[15.5px]"
-                        placeholder="Message KriSpark..."
+                        class="flex-1 bg-transparent border-none outline-none text-white resize-none max-h-48 py-3 px-2 focus:ring-0 leading-relaxed text-[16px]"
+                        placeholder="Message KriSpark..." 
                         rows="1"
-                        oninput="this.style.height = ''; this.style.height = Math.min(this.scrollHeight, 200) + 'px';"
-                        onkeydown="handleKeydown(event)"
+                        oninput="this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px'; document.getElementById('sendBtn').disabled = this.value.trim() === '';"
+                        onkeydown="if(event.key === 'Enter' && !event.shiftKey){ event.preventDefault(); sendMessage(); }"
                     ></textarea>
                     
-                    <button 
-                        id="sendBtn" 
-                        onclick="sendMessage()"
-                        class="p-2.5 mb-0.5 ml-2 bg-[#444] text-gray-500 rounded-full transition-all flex items-center justify-center h-[38px] w-[38px]"
-                        disabled
-                    >
-                        <i class="ph-fill ph-arrow-up text-lg"></i>
+                    <button id="sendBtn" onclick="sendMessage()" class="p-2.5 text-gray-500 rounded-full transition-all mb-0.5 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        <i class="ph-fill ph-arrow-up text-xl bg-white text-black p-1 rounded-full"></i>
                     </button>
                 </div>
-                <div class="text-center text-xs text-gray-500 mt-3">
-                    KriSpark can make mistakes. Consider verifying important information.
-                </div>
+                <div class="text-center text-xs text-gray-500 mt-2">KriSpark can make mistakes. Consider verifying important information.</div>
             </div>
         </div>
+    </div>
 
-    </main>
+    <!-- Toast Component -->
+    <div id="toast" class="px-4 py-2 rounded-lg text-white font-medium text-sm shadow-lg flex items-center gap-2">
+        <i id="toast-icon" class="ph-fill ph-check-circle text-lg"></i>
+        <span id="toast-msg">Action successful</span>
+    </div>
 
     <script>
-        // API Configuration (Your Ngrok URL)
         const API_BASE_URL = "https://snuggle-monkhood-venture.ngrok-free.dev";
 
         // ==========================================
-        // SYSTEM PROMPT (Upgraded for Better AI Behavior)
+        // SYSTEM PROMPT (KriSpark Persona)
         // ==========================================
         const systemPrompt = {
             role: "system",
-            content: "You are KriSpark, an elite, highly intelligent, and ultra-smart assistant. CRITICAL RULE 1: If the user asks 'Who made you?', 'Who created you?', 'Tumhe kisne banaya?', or 'Who is Krishna?', you MUST reply EXACTLY with: 'Mujhe Krishna ne banaya hai, jo BCA 1st year ke student hain.' Do NOT mention this unless specifically asked. CRITICAL RULE 2: For all other questions, be extremely smart, logical, and helpful. Provide highly detailed, structured, and accurate answers. Always use Markdown for formatting and code blocks. CRITICAL RULE 3: Respond naturally in the language the user is speaking (e.g., Hinglish, Hindi, or English)."
+            content: `You are KriSpark, an incredibly smart, highly capable, and natural conversational AI. 
+1. Speak completely naturally like a helpful human assistant. Don't be robotic.
+2. If asked general questions, answer them brilliantly.
+3. If asked who made you or who is your creator, casually and proudly state that you were created by Krishna, who is a BCA 1st Year student. DO NOT mention Krishna unless explicitly asked about your origin/creator.
+4. IMPORTANT: If a user asks about current events, real-time facts, or something you truly don't know, you MUST output exactly the word SEARCH_WEB and nothing else.
+5. If the user provides [Web Search Results] in their prompt, read them silently and use them to construct a natural, helpful reply.`
         };
 
         const chat = document.getElementById("chat");
@@ -190,271 +222,415 @@
 
         let conversation = [];
         let isSending = false;
+        let isWebSearchEnabled = false;
+        let requestStartTime = 0;
+        let thinkingInterval = null;
 
-        // ==========================================
-        // LOCAL STORAGE / CHAT HISTORY
-        // ==========================================
+        // --- Custom Markdown Parser for Code Blocks ---
+        function parseMessageContent(text) {
+            // Using marked.js if available, else fallback
+            if (typeof marked !== 'undefined') {
+                let html = marked.parse(text);
+                // Wrap pre/code blocks with our custom header
+                html = html.replace(/<pre><code class="language-(.*?)">([\s\S]*?)<\/code><\/pre>/g, function(match, lang, code) {
+                    const rawCode = code.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+                    return `
+                        <div class="my-4 rounded-lg overflow-hidden border border-white/10">
+                            <div class="code-header">
+                                <span>${lang || 'code'}</span>
+                                <button onclick="copyRawCode(this)" data-code="${encodeURIComponent(rawCode)}" class="hover:text-white flex items-center gap-1 transition-colors">
+                                    <i class="ph ph-copy"></i> Copy code
+                                </button>
+                            </div>
+                            <div class="code-body bg-[#1e1e1e]">
+                                <pre class="m-0"><code class="text-sm text-gray-200">${code}</code></pre>
+                            </div>
+                        </div>
+                    `;
+                });
+                return html;
+            }
+            return text;
+        }
+
+        function copyRawCode(btn) {
+            const rawCode = decodeURIComponent(btn.getAttribute('data-code'));
+            navigator.clipboard.writeText(rawCode).then(() => {
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<i class="ph ph-check"></i> Copied!';
+                btn.classList.add('text-green-400');
+                setTimeout(() => {
+                    btn.innerHTML = originalHtml;
+                    btn.classList.remove('text-green-400');
+                }, 2000);
+            });
+        }
+
+        // --- UI & State Functions ---
         function loadChats() {
             try {
-                const saved = localStorage.getItem("krishna_ai_history");
+                const saved = localStorage.getItem("krispark_chat");
                 if (saved) {
-                    let parsed = JSON.parse(saved);
-                    if (Array.isArray(parsed)) {
-                        // Filter out old system prompts and invalid messages safely
-                        const historyMsgs = parsed.filter(msg => msg && msg.role && msg.content && msg.role !== 'system');
-                        
-                        // Rebuild with fresh system prompt
-                        conversation = [systemPrompt, ...historyMsgs];
-                        
-                        if (historyMsgs.length > 0) { 
-                            welcomeScreen.style.display = "none";
-                            historyMsgs.forEach(msg => {
-                                renderMessage(msg.content, msg.role, true); // true = no animation on load
-                            });
-                        }
-                    } else {
-                        conversation = [systemPrompt];
+                    const parsed = JSON.parse(saved);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        conversation = parsed;
+                        welcomeScreen.style.display = "none";
+                        chat.innerHTML = "";
+                        conversation.forEach(msg => {
+                            if (msg.role !== "system") {
+                                renderMessageUI(msg.content, msg.role, false, msg.usedWebSearch);
+                            }
+                        });
+                        scrollToBottom();
                     }
-                } else {
-                    conversation = [systemPrompt];
                 }
             } catch(e) {
-                console.error("Storage load error:", e);
-                conversation = [systemPrompt];
+                console.error("Storage error:", e);
+                localStorage.removeItem("krispark_chat");
             }
-            scrollToBottom();
         }
 
         function saveChats() {
-            localStorage.setItem("krishna_ai_history", JSON.stringify(conversation));
+            localStorage.setItem("krispark_chat", JSON.stringify(conversation));
         }
 
-        function clearChat() {
-            // 1. Clear storage and reset array
-            localStorage.removeItem("krishna_ai_history");
-            conversation = [systemPrompt];
-            isSending = false;
-            
-            // 2. Remove all chat messages from UI (without reloading page)
-            const msgs = document.querySelectorAll('.chat-msg');
-            msgs.forEach(m => m.remove());
-            removeLoading();
-            
-            // 3. Show Welcome screen again
-            welcomeScreen.style.display = ""; // Removes 'none', falls back to flex class
-            
-            // 4. Reset Input Box
+        function startNewChat() {
+            conversation = [];
+            localStorage.removeItem("krispark_chat");
+            chat.innerHTML = "";
+            welcomeScreen.style.display = "flex";
+            welcomeScreen.classList.add("fade-in");
             input.value = "";
-            input.style.height = 'auto';
-            sendBtn.classList.add("bg-[#444]", "text-gray-500");
-            sendBtn.classList.remove("bg-white", "text-black");
+            input.style.height = "auto";
             sendBtn.disabled = true;
+            sessionStorage.removeItem("krispark_feedback");
+            showToast("Started a new conversation", false, "ph-sparkle");
         }
 
-        // Initialize chats on load
-        loadChats();
-
-        // ==========================================
-        // UI & EVENT LISTENERS
-        // ==========================================
-        input.addEventListener("input", function() {
-            if (this.value.trim().length > 0 && !isSending) {
-                sendBtn.classList.remove("bg-[#444]", "text-gray-500");
-                sendBtn.classList.add("bg-white", "text-black");
-                sendBtn.disabled = false;
+        function toggleWebSearch() {
+            isWebSearchEnabled = !isWebSearchEnabled;
+            const btn = document.getElementById("webSearchBtn");
+            if (isWebSearchEnabled) {
+                btn.classList.add("text-blue-400", "bg-blue-400/10");
+                btn.classList.remove("text-gray-400", "hover:text-gray-200");
+                showToast("Web Search Enabled", false, "ph-globe");
             } else {
-                sendBtn.classList.add("bg-[#444]", "text-gray-500");
-                sendBtn.classList.remove("bg-white", "text-black");
-                sendBtn.disabled = true;
+                btn.classList.remove("text-blue-400", "bg-blue-400/10");
+                btn.classList.add("text-gray-400", "hover:text-gray-200");
+                showToast("Web Search Disabled", false, "ph-globe");
             }
-        });
+        }
 
-        function handleKeydown(e) {
-            if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-            }
+        function showToast(msg, isError = false, iconClass = "ph-check-circle") {
+            const toast = document.getElementById("toast");
+            const toastMsg = document.getElementById("toast-msg");
+            const toastIcon = document.getElementById("toast-icon");
+            
+            toastMsg.textContent = msg;
+            toastIcon.className = `ph-fill ${iconClass} text-lg`;
+            toast.style.background = isError ? "#ef4444" : "#10a37f";
+            toast.classList.add("show");
+            
+            setTimeout(() => toast.classList.remove("show"), 3000);
         }
 
         function scrollToBottom() {
-            setTimeout(() => {
-                chat.scrollTop = chat.scrollHeight;
-            }, 100);
+            const container = document.getElementById("chat-container");
+            container.scrollTop = container.scrollHeight;
         }
 
-        function renderMessage(text, role, isHistory = false) {
+        // --- Agent Web Search Logic ---
+        async function performAgentSearch(query) {
+            try {
+                const url = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&origin=*`;
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data.query && data.query.search && data.query.search.length > 0) {
+                    return data.query.search.slice(0, 3).map(item => item.title + " - " + item.snippet.replace(/(<([^>]+)>)/gi, "")).join(" | ");
+                }
+            } catch (e) {
+                console.error("Agent Search Error:", e);
+            }
+            return ""; 
+        }
+
+        // --- Render Message UI ---
+        function renderMessageUI(text, role, animate = true, usedWebSearch = false) {
+            welcomeScreen.style.display = "none";
             const div = document.createElement("div");
-            // Manage animation: No animation when loading history for a smoother look
-            const animClass = isHistory ? "opacity-100" : "opacity-0 animate-fade-in";
-            div.className = `chat-msg w-full flex justify-center py-6 px-4 md:px-0 ${animClass}`;
-            
-            const safeText = text || "";
-            
+            div.className = "flex gap-4 mb-6 px-4 fade-in";
+            div.style.animationDelay = animate ? "0s" : "none";
+            div.style.animation = animate ? "fadeIn 0.3s ease forwards" : "none";
+
             if (role === "user") {
                 div.innerHTML = `
-                    <div class="max-w-3xl w-full flex justify-end">
-                        <div class="bg-[#303030] text-gray-100 px-5 py-3 rounded-3xl rounded-tr-sm max-w-[75%] break-words text-[15.5px] shadow-sm border border-white/5">
-                            ${safeText.replace(/\n/g, '<br>')}
-                        </div>
+                    <div class="flex-1 flex justify-end">
+                        <div class="bg-[#2f2f2f] text-white px-5 py-3 rounded-3xl max-w-[80%] whitespace-pre-wrap leading-relaxed">${text}</div>
                     </div>
                 `;
+                chat.appendChild(div);
             } else {
-                // Parse markdown for AI responses
-                const parsedHTML = marked.parse(safeText);
+                let webSearchBadge = usedWebSearch ? `
+                    <div class="flex items-center gap-1.5 text-[11px] text-blue-400 bg-blue-400/10 w-fit px-2.5 py-1 rounded-full mb-3 font-medium border border-blue-400/20">
+                        <i class="ph ph-globe text-sm"></i>
+                        Searched the web
+                    </div>
+                ` : '';
+
                 div.innerHTML = `
-                    <div class="max-w-3xl w-full flex gap-4">
-                        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center flex-shrink-0 mt-1 shadow-md">
-                            <span class="text-white font-bold text-sm">K</span>
-                        </div>
-                        <div class="flex-1 prose prose-invert max-w-none text-gray-100 text-[15.5px] leading-relaxed min-w-0 ai-content">
-                            ${parsedHTML}
+                    <div class="w-8 h-8 rounded-full bg-white flex-shrink-0 flex items-center justify-center">
+                        <i class="ph-fill ph-sparkle text-black text-lg"></i>
+                    </div>
+                    <div class="flex-1 min-w-0 flex flex-col">
+                        ${webSearchBadge}
+                        <div class="text-white prose prose-invert max-w-none leading-relaxed content-box"></div>
+                        <div class="action-toolbar flex items-center gap-2 mt-2 opacity-0 transition-opacity duration-300">
+                            <button onclick="copyToClipboard(this)" class="p-1.5 text-gray-400 hover:text-white hover:bg-[#2f2f2f] rounded flex items-center justify-center transition-colors" title="Copy response">
+                                <i class="ph ph-copy text-lg"></i>
+                            </button>
+                            <button onclick="handleFeedback(this, 'like')" class="p-1.5 text-gray-400 hover:text-white hover:bg-[#2f2f2f] rounded flex items-center justify-center transition-colors feedback-btn" title="Good response">
+                                <i class="ph ph-thumbs-up text-lg"></i>
+                            </button>
+                            <button onclick="handleFeedback(this, 'dislike')" class="p-1.5 text-gray-400 hover:text-white hover:bg-[#2f2f2f] rounded flex items-center justify-center transition-colors feedback-btn" title="Bad response">
+                                <i class="ph ph-thumbs-down text-lg"></i>
+                            </button>
+                            <span class="gen-time text-[11px] text-gray-500 ml-2 font-mono"></span>
                         </div>
                     </div>
                 `;
+                chat.appendChild(div);
+                
+                const contentBox = div.querySelector('.content-box');
+                const toolbar = div.querySelector('.action-toolbar');
+                
+                if (animate) {
+                    // Typewriter Effect
+                    contentBox.classList.add("typing-cursor");
+                    let i = 0;
+                    const chunk = 3; 
+                    const speed = text.length > 200 ? 5 : 15;
 
-                // Add Premium Code Blocks with Copy Button
-                const aiContent = div.querySelector('.ai-content');
-                if (aiContent) {
-                    const preTags = aiContent.querySelectorAll('pre');
-                    preTags.forEach(pre => {
-                        const wrapper = document.createElement('div');
-                        wrapper.className = 'bg-[#0d0d0d] rounded-xl my-5 overflow-hidden border border-[#333] shadow-md';
-                        
-                        const header = document.createElement('div');
-                        header.className = 'flex items-center justify-between px-4 py-2 bg-[#2a2a2a] text-xs text-gray-300 font-sans border-b border-[#333]';
-                        
-                        const codeElement = pre.querySelector('code');
-                        const langClass = codeElement ? Array.from(codeElement.classList).find(c => c.startsWith('language-')) : null;
-                        const lang = langClass ? langClass.replace('language-', '') : 'code';
-                        
-                        header.innerHTML = `
-                            <span class="font-semibold tracking-wider text-gray-400 capitalize">${lang}</span>
-                            <button class="copy-btn flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer text-gray-400">
-                                <i class="ph ph-copy text-sm"></i> Copy code
-                            </button>
-                        `;
-                        
-                        // Copy Logic (Handles iframe limitations gracefully)
-                        const copyBtn = header.querySelector('.copy-btn');
-                        copyBtn.onclick = () => {
-                            const codeText = pre.innerText;
-                            const textarea = document.createElement('textarea');
-                            textarea.value = codeText;
-                            document.body.appendChild(textarea);
-                            textarea.select();
-                            try {
-                                document.execCommand('copy');
-                                copyBtn.innerHTML = '<i class="ph ph-check text-green-400 text-sm"></i> <span class="text-green-400">Copied!</span>';
-                            } catch (e) {
-                                copyBtn.innerHTML = '<i class="ph ph-x text-red-400 text-sm"></i> <span class="text-red-400">Error</span>';
-                            }
-                            document.body.removeChild(textarea);
+                    function typeWriter() {
+                        if (i < text.length) {
+                            i += chunk;
+                            const currentText = text.substring(0, i);
+                            contentBox.innerHTML = parseMessageContent(currentText);
+                            scrollToBottom();
+                            setTimeout(typeWriter, speed);
+                        } else {
+                            contentBox.innerHTML = parseMessageContent(text);
+                            contentBox.classList.remove("typing-cursor");
+                            toolbar.classList.remove("opacity-0"); // Show tools
                             
-                            setTimeout(() => {
-                                copyBtn.innerHTML = '<i class="ph ph-copy text-sm"></i> Copy code';
-                            }, 2000);
-                        };
-
-                        pre.parentNode.insertBefore(wrapper, pre);
-                        wrapper.appendChild(header);
-                        
-                        // Reset pre styling so it fits nicely inside our custom wrapper
-                        pre.style.margin = '0';
-                        pre.style.padding = '16px';
-                        pre.style.overflowX = 'auto';
-                        wrapper.appendChild(pre);
-                    });
+                            // Calculate gen time
+                            const elapsed = ((Date.now() - requestStartTime) / 1000).toFixed(1);
+                            div.querySelector('.gen-time').textContent = `${elapsed}s`;
+                        }
+                    }
+                    typeWriter();
+                } else {
+                    contentBox.innerHTML = parseMessageContent(text);
+                    toolbar.classList.remove("opacity-0");
                 }
             }
-
-            chat.appendChild(div);
             scrollToBottom();
         }
+
+        // --- Action Toolbar Functions ---
+        window.copyToClipboard = function(btn) {
+            const contentBox = btn.closest('.flex-1').querySelector('.content-box');
+            const text = contentBox.innerText; // Get raw text, not html
+            navigator.clipboard.writeText(text).then(() => {
+                const icon = btn.querySelector('i');
+                icon.className = "ph ph-check text-green-400 text-lg";
+                setTimeout(() => { icon.className = "ph ph-copy text-lg"; }, 2000);
+            });
+        };
+
+        window.handleFeedback = function(btn, type) {
+            // UI Update
+            const container = btn.closest('.action-toolbar');
+            container.querySelectorAll('.feedback-btn i').forEach(icon => {
+                icon.classList.remove('ph-fill');
+                icon.classList.add('ph');
+            });
+            btn.querySelector('i').classList.remove('ph');
+            btn.querySelector('i').classList.add('ph-fill');
+
+            // Logic Update
+            if (type === 'like') {
+                sessionStorage.setItem("krispark_feedback", "User liked your previous response. Keep up the good work and maintain this helpful style.");
+                showToast("Feedback submitted!", false, "ph-thumbs-up");
+            } else {
+                sessionStorage.setItem("krispark_feedback", "User DISLIKED your previous response. It was not accurate or helpful. Change your approach and provide a better, more accurate answer this time.");
+                showToast("Feedback submitted. KriSpark will improve.", true, "ph-thumbs-down");
+            }
+        };
 
         function showLoading() {
             const div = document.createElement("div");
             div.id = "loading-indicator";
-            // Added 'chat-msg' class here as well
-            div.className = "chat-msg w-full flex justify-center py-5 px-4 md:px-0";
+            div.className = "flex gap-4 mb-6 px-4 fade-in";
             div.innerHTML = `
-                <div class="max-w-3xl w-full flex gap-4">
-                    <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center flex-shrink-0 mt-1">
-                        <span class="text-black font-bold text-sm">K</span>
-                    </div>
-                    <div class="flex-1 mt-3 typing-indicator">
-                        <span></span><span></span><span></span>
+                <div class="w-8 h-8 rounded-full bg-white flex-shrink-0 flex items-center justify-center">
+                    <i id="loading-icon" class="ph-fill ph-sparkle text-black text-lg animate-pulse"></i>
+                </div>
+                <div class="flex-1 flex flex-col justify-center">
+                    <div class="flex items-center gap-2 text-sm text-gray-400 font-medium">
+                        <span id="agent-status" class="animate-pulse">Thinking...</span>
+                        <span id="thinking-timer" class="font-mono text-xs bg-white/10 px-2 py-0.5 rounded">0.0s</span>
                     </div>
                 </div>
             `;
             chat.appendChild(div);
             scrollToBottom();
+
+            requestStartTime = Date.now();
+            thinkingInterval = setInterval(() => {
+                const elapsed = ((Date.now() - requestStartTime) / 1000).toFixed(1);
+                const timerEl = document.getElementById("thinking-timer");
+                if (timerEl) timerEl.textContent = `${elapsed}s`;
+            }, 100);
         }
 
         function removeLoading() {
+            if (thinkingInterval) clearInterval(thinkingInterval);
             const loader = document.getElementById("loading-indicator");
             if (loader) loader.remove();
         }
 
-        // ==========================================
-        // API CALL
-        // ==========================================
+        function updateAgentStatus(statusText, iconClass = null) {
+            const statusEl = document.getElementById("agent-status");
+            const iconEl = document.getElementById("loading-icon");
+            if (statusEl) statusEl.textContent = statusText;
+            if (iconClass && iconEl) {
+                iconEl.className = `ph-fill ${iconClass} text-black text-lg animate-pulse`;
+            }
+        }
+
+        // --- Core Send Message Logic ---
         async function sendMessage() {
             const text = input.value.trim();
             if (!text || isSending) return;
 
-            welcomeScreen.style.display = "none";
             isSending = true;
-            
-            // Reset input UI
             input.value = "";
-            input.style.height = 'auto';
-            sendBtn.classList.add("bg-[#444]", "text-gray-500");
-            sendBtn.classList.remove("bg-white", "text-black");
+            input.style.height = "auto";
             sendBtn.disabled = true;
 
-            // Render User Message
-            renderMessage(text, "user");
+            // Initialize chat history if empty
+            if (conversation.length === 0) {
+                conversation.push(systemPrompt);
+            }
+
+            renderMessageUI(text, "user");
             conversation.push({ role: "user", content: text });
             saveChats();
 
             showLoading();
+            let usedWebSearch = false;
 
             try {
+                let payloadMessages = JSON.parse(JSON.stringify(conversation));
+                let searchContext = "";
+
+                // 1. Manual Web Search Agent
+                if (isWebSearchEnabled) {
+                    usedWebSearch = true;
+                    updateAgentStatus("Browsing the web...", "ph-globe");
+                    searchContext = await performAgentSearch(text);
+                    if (searchContext) {
+                        payloadMessages[payloadMessages.length - 1].content = `User Query: "${text}"\n\n[Web Search Results: ${searchContext}]\n\nPlease answer the user query naturally using the provided web search results.`;
+                    }
+                    updateAgentStatus("Thinking...", "ph-sparkle");
+                }
+
+                // 2. Inject Feedback Context
+                let feedback = sessionStorage.getItem("krispark_feedback");
+                if (feedback) {
+                    payloadMessages.splice(payloadMessages.length - 1, 0, { role: "system", content: `[SYSTEM NOTE: ${feedback}]` });
+                    sessionStorage.removeItem("krispark_feedback"); // Use once per feedback
+                }
+
                 const response = await fetch(API_BASE_URL + "/api/chat", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
-                        "ngrok-skip-browser-warning": "true" // Important for Ngrok
+                        "ngrok-skip-browser-warning": "true"
                     },
                     body: JSON.stringify({
                         model: "gemma2:2b",
-                        messages: conversation
+                        messages: payloadMessages
                     })
                 });
 
                 const data = await response.json();
-                removeLoading();
-
+                
                 if (!response.ok) {
-                    const errorMsg = "Error: " + (data.error || "Server issue");
-                    renderMessage(errorMsg, "assistant");
+                    removeLoading();
+                    renderMessageUI("Error: " + (data.error || "Server issue"), "assistant");
+                    isSending = false;
                     return;
                 }
 
-                const reply = data.reply || data.message?.content || "No response.";
+                let reply = data.reply || data.message?.content || "No response.";
                 
-                // Add AI reply to conversation and UI
-                conversation.push({ role: "assistant", content: reply });
-                renderMessage(reply, "assistant");
+                // 3. Autonomous Web Search Agent
+                if (!isWebSearchEnabled && (reply.includes("SEARCH_WEB") || reply.includes("SEARCH_GOOGLE"))) {
+                    usedWebSearch = true;
+                    updateAgentStatus("Agent is searching the web...", "ph-globe-hemisphere-west");
+                    
+                    searchContext = await performAgentSearch(text);
+                    
+                    if (searchContext) {
+                        updateAgentStatus("Reading search results...", "ph-book-open");
+                        payloadMessages = JSON.parse(JSON.stringify(conversation)); 
+                        payloadMessages[payloadMessages.length - 1].content = `User Query: "${text}"\n\n[Real-time Web Results: ${searchContext}]\n\nPlease provide a helpful answer based on these web search results.`;
+                        
+                        const response2 = await fetch(API_BASE_URL + "/api/chat", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "ngrok-skip-browser-warning": "true"
+                            },
+                            body: JSON.stringify({
+                                model: "gemma2:2b",
+                                messages: payloadMessages
+                            })
+                        });
+                        
+                        const data2 = await response2.json();
+                        reply = data2.reply || data2.message?.content || "No response.";
+                    } else {
+                        reply = "I couldn't find exact current information about this on the internet. Could you provide more details?";
+                    }
+                }
+
+                // Cleanup
+                reply = reply.replace(/SEARCH_WEB/g, '').replace(/SEARCH_GOOGLE/g, '').trim();
+                if (reply === "") reply = "Sorry, I couldn't process that properly.";
+
+                removeLoading();
+                conversation.push({ role: "assistant", content: reply, usedWebSearch: usedWebSearch });
                 saveChats();
+                renderMessageUI(reply, "assistant", true, usedWebSearch); // Pass true to trigger Typewriter
 
             } catch (error) {
                 removeLoading();
-                renderMessage("Server se connect nahi ho pa raha hai. (Ensure Ngrok is running)\n\n" + error.message, "assistant");
+                renderMessageUI("Connection failed. Make sure Ngrok server is running.\n\n" + error.message, "assistant");
             } finally {
                 isSending = false;
+                if (input.value.trim() !== "") sendBtn.disabled = false;
+                input.focus();
             }
         }
+
+        // Initialize on load
+        window.onload = () => {
+            loadChats();
+            input.focus();
+        };
+
     </script>
 </body>
 </html>
