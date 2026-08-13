@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Krishna AI</title>
+    <title>KriSpark</title>
     
     <!-- Tailwind CSS for ChatGPT like styling -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -22,10 +22,10 @@
         }
 
         /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #777; }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #666; }
 
         .chat-container {
             scroll-behavior: smooth;
@@ -33,28 +33,34 @@
 
         /* Markdown Styles */
         .prose pre {
-            background-color: #0d0d0d !important;
-            padding: 12px;
-            border-radius: 8px;
-            overflow-x: auto;
-            margin-top: 10px;
-            margin-bottom: 10px;
-            border: 1px solid #333;
+            margin: 0 !important;
+            padding: 0 !important;
+            background-color: transparent !important;
+            border: none !important;
         }
         .prose code {
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
             color: #e5e5e5;
             background: #333;
-            padding: 2px 4px;
-            border-radius: 4px;
-            font-size: 0.9em;
+            padding: 3px 6px;
+            border-radius: 6px;
+            font-size: 0.85em;
         }
         .prose pre code {
             background: transparent;
             padding: 0;
-            color: #10b981; /* Greenish code color */
+            color: #e5e5e5;
         }
-        .prose p { margin-bottom: 10px; }
+        .prose p { margin-bottom: 12px; line-height: 1.7; }
+
+        /* Animation for new messages */
+        @keyframes messageFadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: messageFadeIn 0.3s ease-out forwards;
+        }
 
         /* Typing indicator animation */
         .typing-indicator span {
@@ -89,7 +95,7 @@
         <div class="flex-1 overflow-y-auto p-3">
             <div class="px-2 pb-2 text-xs font-semibold text-gray-500">History</div>
             <div class="p-2 rounded-lg bg-[#212121] text-gray-200 text-sm cursor-pointer truncate">
-                Krishna AI Conversation
+                KriSpark Conversation
             </div>
         </div>
         
@@ -109,7 +115,7 @@
         <!-- Header (Mobile visible, Desktop minimal) -->
         <header class="flex items-center justify-between p-3 absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-[#212121] to-transparent">
             <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium text-lg text-gray-200">
-                Krishna AI 
+                KriSpark 
                 <span class="text-gray-500 text-xs ml-1 border border-gray-600 rounded px-1">gemma2:2b</span>
             </div>
             <button onclick="clearChat()" class="p-2 text-gray-400 hover:text-white md:hidden">
@@ -121,11 +127,11 @@
         <div id="chat" class="chat-container flex-1 overflow-y-auto w-full pb-32 pt-16 flex flex-col items-center">
             
             <!-- Welcome Screen -->
-            <div id="welcome-screen" class="flex-1 flex flex-col items-center justify-center px-4 w-full max-w-3xl">
-                <div class="w-16 h-16 rounded-full bg-white flex items-center justify-center mb-6 shadow-lg">
-                    <span class="text-3xl font-bold text-black">K</span>
+            <div id="welcome-screen" class="flex-1 flex flex-col items-center justify-center px-4 w-full max-w-3xl transition-opacity duration-300">
+                <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center mb-6 shadow-xl shadow-purple-900/20">
+                    <span class="text-4xl font-bold text-white drop-shadow-md">K</span>
                 </div>
-                <h1 class="text-2xl md:text-3xl font-semibold text-white mb-8 text-center">How can I help you today?</h1>
+                <h1 class="text-3xl md:text-4xl font-semibold text-white mb-8 text-center tracking-tight">How can I help you today?</h1>
             </div>
 
         </div>
@@ -133,7 +139,7 @@
         <!-- Input Area -->
         <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#212121] via-[#212121] to-transparent pt-6 pb-6 px-4 md:px-0 flex justify-center">
             <div class="w-full max-w-3xl relative">
-                <div class="bg-[#2f2f2f] rounded-[24px] flex items-end p-2 shadow-lg border border-white/5">
+                <div class="bg-[#2f2f2f] rounded-[26px] flex items-end p-2 shadow-xl border border-white/10 focus-within:border-white/20 focus-within:ring-2 focus-within:ring-white/10 transition-all duration-300">
                     
                     <button class="p-2.5 text-gray-400 hover:text-gray-200 rounded-full transition-colors mb-0.5">
                         <i class="ph ph-paperclip text-xl"></i>
@@ -142,7 +148,7 @@
                     <textarea 
                         id="message" 
                         class="flex-1 bg-transparent border-none outline-none text-white resize-none max-h-48 py-3 px-2 focus:ring-0 leading-relaxed text-[15.5px]"
-                        placeholder="Message Krishna AI..."
+                        placeholder="Message KriSpark..."
                         rows="1"
                         oninput="this.style.height = ''; this.style.height = Math.min(this.scrollHeight, 200) + 'px';"
                         onkeydown="handleKeydown(event)"
@@ -158,7 +164,7 @@
                     </button>
                 </div>
                 <div class="text-center text-xs text-gray-500 mt-3">
-                    Krishna AI can make mistakes. Consider verifying important information.
+                    KriSpark can make mistakes. Consider verifying important information.
                 </div>
             </div>
         </div>
@@ -170,11 +176,11 @@
         const API_BASE_URL = "https://snuggle-monkhood-venture.ngrok-free.dev";
 
         // ==========================================
-        // SYSTEM PROMPT (Strict & Short)
+        // SYSTEM PROMPT (Upgraded for Better AI Behavior)
         // ==========================================
         const systemPrompt = {
             role: "system",
-            content: "You are Krishna AI, a helpful assistant. Secret Rule: Only if the user asks exactly 'who made you', 'who created you', or 'who is Krishna', you must reply: 'Mujhe Krishna ne banaya hai, jo BCA 1st year ke student hain.' DO NOT mention this secret rule or Krishna in any other response. For all other queries, answer normally."
+            content: "You are KriSpark, an elite, highly intelligent, and ultra-smart assistant. CRITICAL RULE 1: If the user asks 'Who made you?', 'Who created you?', 'Tumhe kisne banaya?', or 'Who is Krishna?', you MUST reply EXACTLY with: 'Mujhe Krishna ne banaya hai, jo BCA 1st year ke student hain.' Do NOT mention this unless specifically asked. CRITICAL RULE 2: For all other questions, be extremely smart, logical, and helpful. Provide highly detailed, structured, and accurate answers. Always use Markdown for formatting and code blocks. CRITICAL RULE 3: Respond naturally in the language the user is speaking (e.g., Hinglish, Hindi, or English)."
         };
 
         const chat = document.getElementById("chat");
@@ -193,23 +199,17 @@
                 const saved = localStorage.getItem("krishna_ai_history");
                 if (saved) {
                     let parsed = JSON.parse(saved);
-                    // Check if valid array and has data
-                    if (Array.isArray(parsed) && parsed.length > 0) {
-                        // Always ensure the first message is the latest system prompt
-                        if (parsed[0].role === 'system') {
-                            parsed[0] = systemPrompt; 
-                        } else {
-                            parsed.unshift(systemPrompt); 
-                        }
+                    if (Array.isArray(parsed)) {
+                        // Filter out old system prompts and invalid messages safely
+                        const historyMsgs = parsed.filter(msg => msg && msg.role && msg.content && msg.role !== 'system');
                         
-                        conversation = parsed;
+                        // Rebuild with fresh system prompt
+                        conversation = [systemPrompt, ...historyMsgs];
                         
-                        if (conversation.length > 1) { // Render if there's user/ai history
+                        if (historyMsgs.length > 0) { 
                             welcomeScreen.style.display = "none";
-                            conversation.forEach(msg => {
-                                if (msg.role !== 'system') {
-                                    renderMessage(msg.content, msg.role);
-                                }
+                            historyMsgs.forEach(msg => {
+                                renderMessage(msg.content, msg.role, true); // true = no animation on load
                             });
                         }
                     } else {
@@ -282,32 +282,89 @@
             }, 100);
         }
 
-        function renderMessage(text, role) {
+        function renderMessage(text, role, isHistory = false) {
             const div = document.createElement("div");
-            // Added 'chat-msg' class so we can clear them easily
-            div.className = "chat-msg w-full flex justify-center py-5 px-4 md:px-0";
+            // Manage animation: No animation when loading history for a smoother look
+            const animClass = isHistory ? "opacity-100" : "opacity-0 animate-fade-in";
+            div.className = `chat-msg w-full flex justify-center py-6 px-4 md:px-0 ${animClass}`;
+            
+            const safeText = text || "";
             
             if (role === "user") {
                 div.innerHTML = `
                     <div class="max-w-3xl w-full flex justify-end">
-                        <div class="bg-[#2f2f2f] text-gray-100 px-5 py-3 rounded-3xl max-w-[75%] break-words text-[15.5px]">
-                            ${text.replace(/\n/g, '<br>')}
+                        <div class="bg-[#303030] text-gray-100 px-5 py-3 rounded-3xl rounded-tr-sm max-w-[75%] break-words text-[15.5px] shadow-sm border border-white/5">
+                            ${safeText.replace(/\n/g, '<br>')}
                         </div>
                     </div>
                 `;
             } else {
                 // Parse markdown for AI responses
-                const parsedHTML = marked.parse(text);
+                const parsedHTML = marked.parse(safeText);
                 div.innerHTML = `
                     <div class="max-w-3xl w-full flex gap-4">
-                        <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center flex-shrink-0 mt-1">
-                            <span class="text-black font-bold text-sm">K</span>
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center flex-shrink-0 mt-1 shadow-md">
+                            <span class="text-white font-bold text-sm">K</span>
                         </div>
-                        <div class="flex-1 prose prose-invert max-w-none text-gray-100 text-[15.5px] leading-relaxed min-w-0">
+                        <div class="flex-1 prose prose-invert max-w-none text-gray-100 text-[15.5px] leading-relaxed min-w-0 ai-content">
                             ${parsedHTML}
                         </div>
                     </div>
                 `;
+
+                // Add Premium Code Blocks with Copy Button
+                const aiContent = div.querySelector('.ai-content');
+                if (aiContent) {
+                    const preTags = aiContent.querySelectorAll('pre');
+                    preTags.forEach(pre => {
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'bg-[#0d0d0d] rounded-xl my-5 overflow-hidden border border-[#333] shadow-md';
+                        
+                        const header = document.createElement('div');
+                        header.className = 'flex items-center justify-between px-4 py-2 bg-[#2a2a2a] text-xs text-gray-300 font-sans border-b border-[#333]';
+                        
+                        const codeElement = pre.querySelector('code');
+                        const langClass = codeElement ? Array.from(codeElement.classList).find(c => c.startsWith('language-')) : null;
+                        const lang = langClass ? langClass.replace('language-', '') : 'code';
+                        
+                        header.innerHTML = `
+                            <span class="font-semibold tracking-wider text-gray-400 capitalize">${lang}</span>
+                            <button class="copy-btn flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer text-gray-400">
+                                <i class="ph ph-copy text-sm"></i> Copy code
+                            </button>
+                        `;
+                        
+                        // Copy Logic (Handles iframe limitations gracefully)
+                        const copyBtn = header.querySelector('.copy-btn');
+                        copyBtn.onclick = () => {
+                            const codeText = pre.innerText;
+                            const textarea = document.createElement('textarea');
+                            textarea.value = codeText;
+                            document.body.appendChild(textarea);
+                            textarea.select();
+                            try {
+                                document.execCommand('copy');
+                                copyBtn.innerHTML = '<i class="ph ph-check text-green-400 text-sm"></i> <span class="text-green-400">Copied!</span>';
+                            } catch (e) {
+                                copyBtn.innerHTML = '<i class="ph ph-x text-red-400 text-sm"></i> <span class="text-red-400">Error</span>';
+                            }
+                            document.body.removeChild(textarea);
+                            
+                            setTimeout(() => {
+                                copyBtn.innerHTML = '<i class="ph ph-copy text-sm"></i> Copy code';
+                            }, 2000);
+                        };
+
+                        pre.parentNode.insertBefore(wrapper, pre);
+                        wrapper.appendChild(header);
+                        
+                        // Reset pre styling so it fits nicely inside our custom wrapper
+                        pre.style.margin = '0';
+                        pre.style.padding = '16px';
+                        pre.style.overflowX = 'auto';
+                        wrapper.appendChild(pre);
+                    });
+                }
             }
 
             chat.appendChild(div);
