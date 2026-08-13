@@ -189,27 +189,37 @@
         // LOCAL STORAGE / CHAT HISTORY
         // ==========================================
         function loadChats() {
-            const saved = localStorage.getItem("krishna_ai_history");
-            if (saved) {
-                try {
-                    const parsed = JSON.parse(saved);
-                    if (parsed && parsed.length > 1) { // Means it has more than just system prompt
-                        conversation = parsed;
-                        welcomeScreen.style.display = "none";
+            try {
+                const saved = localStorage.getItem("krishna_ai_history");
+                if (saved) {
+                    let parsed = JSON.parse(saved);
+                    // Check if valid array and has data
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        // Always ensure the first message is the latest system prompt
+                        if (parsed[0].role === 'system') {
+                            parsed[0] = systemPrompt; 
+                        } else {
+                            parsed.unshift(systemPrompt); 
+                        }
                         
-                        // Render UI
-                        parsed.forEach(msg => {
-                            if (msg.role !== 'system') {
-                                renderMessage(msg.content, msg.role);
-                            }
-                        });
+                        conversation = parsed;
+                        
+                        if (conversation.length > 1) { // Render if there's user/ai history
+                            welcomeScreen.style.display = "none";
+                            conversation.forEach(msg => {
+                                if (msg.role !== 'system') {
+                                    renderMessage(msg.content, msg.role);
+                                }
+                            });
+                        }
                     } else {
                         conversation = [systemPrompt];
                     }
-                } catch(e) {
+                } else {
                     conversation = [systemPrompt];
                 }
-            } else {
+            } catch(e) {
+                console.error("Storage load error:", e);
                 conversation = [systemPrompt];
             }
             scrollToBottom();
@@ -220,8 +230,25 @@
         }
 
         function clearChat() {
+            // 1. Clear storage and reset array
             localStorage.removeItem("krishna_ai_history");
-            location.reload();
+            conversation = [systemPrompt];
+            isSending = false;
+            
+            // 2. Remove all chat messages from UI (without reloading page)
+            const msgs = document.querySelectorAll('.chat-msg');
+            msgs.forEach(m => m.remove());
+            removeLoading();
+            
+            // 3. Show Welcome screen again
+            welcomeScreen.style.display = ""; // Removes 'none', falls back to flex class
+            
+            // 4. Reset Input Box
+            input.value = "";
+            input.style.height = 'auto';
+            sendBtn.classList.add("bg-[#444]", "text-gray-500");
+            sendBtn.classList.remove("bg-white", "text-black");
+            sendBtn.disabled = true;
         }
 
         // Initialize chats on load
@@ -257,7 +284,8 @@
 
         function renderMessage(text, role) {
             const div = document.createElement("div");
-            div.className = "w-full flex justify-center py-5 px-4 md:px-0";
+            // Added 'chat-msg' class so we can clear them easily
+            div.className = "chat-msg w-full flex justify-center py-5 px-4 md:px-0";
             
             if (role === "user") {
                 div.innerHTML = `
@@ -289,7 +317,8 @@
         function showLoading() {
             const div = document.createElement("div");
             div.id = "loading-indicator";
-            div.className = "w-full flex justify-center py-5 px-4 md:px-0";
+            // Added 'chat-msg' class here as well
+            div.className = "chat-msg w-full flex justify-center py-5 px-4 md:px-0";
             div.innerHTML = `
                 <div class="max-w-3xl w-full flex gap-4">
                     <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center flex-shrink-0 mt-1">
